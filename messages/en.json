@@ -1,0 +1,9 @@
+{
+  "common": {
+    "catalog": "Catalog",
+    "addToCart": "Add to cart",
+    "inStock": "In stock",
+    "outOfStock": "Out of stock",
+    "priceFrom": "from"
+  }
+}

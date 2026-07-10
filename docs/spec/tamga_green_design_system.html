@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tamga Green — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ===== COLOR TOKENS ===== */
+    --canopy: #1F3D2B;      /* глубокий тёмный зелёный — тёмные поверхности, текст на светлом */
+    --canopy-90: #26492F;
+    --sap: #3E7D44;         /* основной зелёный действия — primary CTA */
+    --sap-hover: #2F6435;
+    --sap-active: #245029;
+    --sprout: #7FB069;      /* свежий зелёный — успех, теги "в наличии" */
+    --sprout-bg: #E7F0DF;
+    --stamp: #B8873A;       /* охра/латунь — акцент печати, верификация, фокус */
+    --stamp-dark: #8C6526;
+    --stamp-bg: #F3E8D2;
+    --paper: #F5F3E8;       /* тёплый фон */
+    --paper-deep: #ECE9DA;  /* фон карточек/секций */
+    --ink: #1E2119;         /* основной текст */
+    --ink-muted: #5B6259;   /* второстепенный текст */
+    --border: #D9D5C3;
+    --error: #A3402D;
+    --error-bg: #F3E1DB;
+    --warning: #C99A3E;
+
+    /* ===== TYPE ===== */
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Inter', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+    /* ===== SPACING (4px base) ===== */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px;
+
+    /* ===== RADIUS ===== */
+    --r-sm: 4px; --r-md: 8px; --r-lg: 16px; --r-full: 999px;
+
+    /* ===== SHADOW (тёплый оттенок вместо чистого чёрного) ===== */
+    --shadow-sm: 0 1px 2px rgba(30,33,25,0.08), 0 1px 1px rgba(30,33,25,0.04);
+    --shadow-md: 0 4px 10px rgba(30,33,25,0.10), 0 2px 4px rgba(30,33,25,0.06);
+    --shadow-lg: 0 16px 32px rgba(30,33,25,0.16), 0 4px 10px rgba(30,33,25,0.08);
+
+    --ease: cubic-bezier(.4,0,.2,1);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;} }
+
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--font-body); font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  ::selection{background:var(--stamp-bg); color:var(--canopy);}
+
+  :focus-visible{ outline:2px solid var(--stamp); outline-offset:2px; border-radius:var(--r-sm); }
+
+  .wrap{max-width:1280px; margin:0 auto; padding:0 var(--sp-5);}
+  @media (max-width:900px){ .wrap{padding:0 var(--sp-4);} }
+
+  section{padding:var(--sp-9) 0; border-top:1px solid var(--border);}
+  section:first-of-type{border-top:none;}
+
+  h1,h2,h3{font-family:var(--font-display); font-weight:600; margin:0 0 var(--sp-3);}
+  .eyebrow{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--stamp-dark); margin:0 0 var(--sp-2); display:flex; align-items:center; gap:var(--sp-2);
+  }
+  .eyebrow::before{content:""; width:16px; height:1px; background:var(--stamp);}
+  p.lede{color:var(--ink-muted); max-width:640px; font-size:17px;}
+
+  /* ===== NAV ===== */
+  nav{
+    position:sticky; top:0; z-index:50; background:rgba(245,243,232,0.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+  }
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; padding-top:var(--sp-3); padding-bottom:var(--sp-3);}
+  .brand{display:flex; align-items:center; gap:var(--sp-2); font-family:var(--font-display); font-weight:600; font-size:19px;}
+  .navlinks{display:flex; gap:var(--sp-5); font-size:13px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.04em;}
+  .navlinks a{text-decoration:none; color:var(--ink-muted); transition:color .15s var(--ease);}
+  .navlinks a:hover{color:var(--sap);}
+  @media (max-width:800px){ .navlinks{display:none;} }
+
+  /* ===== SEAL (signature element) ===== */
+  .seal{
+    --sz:64px; width:var(--sz); height:var(--sz); border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+    background:var(--canopy); color:var(--paper); position:relative;
+    box-shadow: inset 0 0 0 2px rgba(245,243,232,.25);
+  }
+  .seal svg{width:60%; height:60%;}
+  .seal.stamp-ink{background:var(--stamp); color:var(--canopy);}
+  .seal-ring{ position:absolute; inset:-6px; border:1px dashed rgba(184,135,58,.55); border-radius:50%; }
+
+  /* ===== HERO ===== */
+  .hero{padding-top:var(--sp-9); display:grid; grid-template-columns:1.3fr 1fr; gap:var(--sp-8); align-items:center;}
+  @media (max-width:900px){ .hero{grid-template-columns:1fr; text-align:left;} }
+  .hero h1{font-size:clamp(40px,5.5vw,68px); line-height:1.02; letter-spacing:-0.01em;}
+  .hero .accent{color:var(--sap); font-style:italic;}
+  .hero-visual{display:flex; align-items:center; justify-content:center; padding:var(--sp-7); background:var(--canopy); border-radius:var(--r-lg); position:relative; overflow:hidden;}
+  .hero-visual .seal{--sz:180px;}
+  .hero-visual::after{content:"TG · EST. MARKETPLACE"; position:absolute; bottom:16px; left:50%; transform:translateX(-50%); font-family:var(--font-mono); font-size:10px; letter-spacing:.15em; color:rgba(245,243,232,.5);}
+
+  /* ===== COLOR SWATCHES ===== */
+  .grid-colors{display:grid; grid-template-columns:repeat(6,1fr); gap:var(--sp-4); margin-top:var(--sp-6);}
+  @media (max-width:900px){ .grid-colors{grid-template-columns:repeat(3,1fr);} }
+  @media (max-width:560px){ .grid-colors{grid-template-columns:repeat(2,1fr);} }
+  .swatch{border-radius:var(--r-md); overflow:hidden; border:1px solid var(--border); background:#fff;}
+  .swatch .fill{height:88px;}
+  .swatch .meta{padding:var(--sp-3);}
+  .swatch .name{font-weight:600; font-size:13.5px;}
+  .swatch .hex{font-family:var(--font-mono); font-size:12px; color:var(--ink-muted);}
+  .swatch .use{font-size:12px; color:var(--ink-muted); margin-top:2px;}
+
+  /* ===== TYPE SCALE ===== */
+  .type-row{display:flex; align-items:baseline; gap:var(--sp-5); padding:var(--sp-4) 0; border-bottom:1px solid var(--border);}
+  .type-row:last-child{border-bottom:none;}
+  .type-row .tag{font-family:var(--font-mono); font-size:12px; color:var(--ink-muted); width:150px; flex-shrink:0;}
+  .type-sample{font-family:var(--font-display); font-weight:600;}
+  .type-body-sample{font-family:var(--font-body);}
+  .type-mono-sample{font-family:var(--font-mono);}
+
+  .type-cols{display:grid; grid-template-columns:1fr 1fr 1fr; gap:var(--sp-6); margin-top:var(--sp-6);}
+  @media (max-width:900px){ .type-cols{grid-template-columns:1fr;} }
+  .type-card{background:#fff; border:1px solid var(--border); border-radius:var(--r-md); padding:var(--sp-5);}
+  .type-card h4{margin:0 0 var(--sp-1); font-family:var(--font-mono); text-transform:uppercase; font-size:11px; letter-spacing:.08em; color:var(--stamp-dark); font-weight:500;}
+  .type-card .big{font-size:34px; margin:var(--sp-2) 0;}
+  .type-card .role{color:var(--ink-muted); font-size:13px;}
+
+  /* ===== SPACING ===== */
+  .space-row{display:flex; align-items:center; gap:var(--sp-4); margin-bottom:var(--sp-3);}
+  .space-bar{height:16px; background:var(--sap); border-radius:2px;}
+  .space-label{font-family:var(--font-mono); font-size:12px; color:var(--ink-muted); width:110px;}
+
+  .col-demo{display:grid; grid-template-columns:repeat(12,1fr); gap:8px; margin-top:var(--sp-5);}
+  .col-demo div{background:var(--sprout-bg); border:1px dashed var(--sprout); height:40px; border-radius:4px;}
+
+  /* ===== BUTTONS ===== */
+  .btn-grid{display:flex; flex-wrap:wrap; gap:var(--sp-4); margin-top:var(--sp-5); align-items:center;}
+  .btn{
+    font-family:var(--font-body); font-weight:600; font-size:14.5px; border-radius:var(--r-md);
+    padding:12px 22px; border:1px solid transparent; cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+    transition:background .15s var(--ease), border-color .15s var(--ease), transform .1s var(--ease), box-shadow .15s var(--ease);
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--sap); color:#fff;}
+  .btn-primary:hover{background:var(--sap-hover);}
+  .btn-primary.is-active{background:var(--sap-active);}
+  .btn-secondary{background:transparent; color:var(--canopy); border-color:var(--canopy);}
+  .btn-secondary:hover{background:var(--canopy); color:#fff;}
+  .btn-ghost{background:transparent; color:var(--ink); border-color:transparent;}
+  .btn-ghost:hover{background:var(--paper-deep);}
+  .btn-destructive{background:transparent; color:var(--error); border-color:var(--error);}
+  .btn-destructive:hover{background:var(--error); color:#fff;}
+  .btn[disabled]{opacity:.4; cursor:not-allowed;}
+  .btn.is-loading{color:transparent; position:relative; pointer-events:none;}
+  .btn.is-loading::after{
+    content:""; position:absolute; width:16px; height:16px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.4); border-top-color:#fff; animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .state-label{font-family:var(--font-mono); font-size:11px; color:var(--ink-muted); display:block; margin-bottom:6px; text-align:center;}
+
+  /* ===== CARDS ===== */
+  .cards-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-5); margin-top:var(--sp-6);}
+  @media (max-width:900px){ .cards-grid{grid-template-columns:1fr 1fr;} }
+  @media (max-width:600px){ .cards-grid{grid-template-columns:1fr;} }
+
+  .tag-card{background:#fff; border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--shadow-sm); border:1px solid var(--border); transition:box-shadow .2s var(--ease), transform .2s var(--ease);}
+  .tag-card:hover{box-shadow:var(--shadow-lg); transform:translateY(-3px);}
+  .tag-card .img{height:150px; background:linear-gradient(135deg,var(--sprout),var(--sap));}
+  .tag-card .label{position:relative; padding:var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-6); border-top:1px dashed var(--border);}
+  .tag-card .label::before{
+    content:""; position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; border-radius:50%; background:var(--paper); border:1px solid var(--border);
+  }
+  .tag-card .plant-name{font-family:var(--font-display); font-weight:600; font-size:17px;}
+  .tag-card .plant-lat{font-style:italic; color:var(--ink-muted); font-size:12.5px; margin:2px 0 8px;}
+  .tag-card .row{display:flex; justify-content:space-between; align-items:center; font-size:13px;}
+  .tag-card .price{font-family:var(--font-mono); font-weight:500;}
+  .pill{font-family:var(--font-mono); font-size:11px; padding:3px 9px; border-radius:var(--r-full); background:var(--sprout-bg); color:var(--canopy);}
+
+  .supplier-card{background:#fff; border-radius:var(--r-lg); border:1px solid var(--border); padding:var(--sp-5); box-shadow:var(--shadow-sm); display:flex; gap:var(--sp-4); align-items:flex-start;}
+  .verified-badge{display:inline-flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:11px; color:var(--stamp-dark); background:var(--stamp-bg); padding:3px 8px; border-radius:var(--r-full); margin-top:6px;}
+  .verified-badge svg{width:12px; height:12px;}
+
+  .stat-card{background:var(--canopy); color:var(--paper); border-radius:var(--r-lg); padding:var(--sp-5); box-shadow:var(--shadow-md);}
+  .stat-card .num{font-family:var(--font-display); font-size:38px; font-weight:600;}
+  .stat-card .lab{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:rgba(245,243,232,.6);}
+
+  /* ===== ICONS ===== */
+  .icon-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:var(--sp-4); margin-top:var(--sp-6);}
+  @media (max-width:900px){ .icon-grid{grid-template-columns:repeat(3,1fr);} }
+  .icon-tile{background:#fff; border:1px solid var(--border); border-radius:var(--r-md); padding:var(--sp-4); text-align:center;}
+  .icon-tile svg{width:26px; height:26px; stroke:var(--canopy); fill:none; stroke-width:1.6;}
+  .icon-tile .lab{font-family:var(--font-mono); font-size:11px; margin-top:8px; color:var(--ink-muted);}
+
+  /* ===== SHADOWS / RADIUS ===== */
+  .flat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:var(--sp-5); margin-top:var(--sp-6);}
+  @media (max-width:700px){ .flat-grid{grid-template-columns:1fr;} }
+  .flat-box{background:#fff; border-radius:var(--r-md); padding:var(--sp-5); text-align:center; font-family:var(--font-mono); font-size:12px; color:var(--ink-muted);}
+
+  .radius-grid{display:flex; gap:var(--sp-5); margin-top:var(--sp-6); flex-wrap:wrap;}
+  .radius-item{width:96px; height:96px; background:var(--sap); display:flex; align-items:flex-end; justify-content:center; padding-bottom:8px; color:#fff; font-family:var(--font-mono); font-size:11px;}
+
+  /* ===== MOTION DEMO ===== */
+  .motion-demo{display:flex; gap:var(--sp-6); align-items:center; margin-top:var(--sp-6); flex-wrap:wrap;}
+  .spin-seal{animation:spin 2.4s linear infinite;}
+  .hover-tile{background:#fff; border:1px solid var(--border); border-radius:var(--r-md); padding:var(--sp-5); width:180px; text-align:center; transition:transform .25s var(--ease), box-shadow .25s var(--ease); cursor:pointer;}
+  .hover-tile:hover{transform:translateY(-4px) scale(1.02); box-shadow:var(--shadow-md);}
+
+  /* ===== RESPONSIVE TABLE ===== */
+  table{width:100%; border-collapse:collapse; margin-top:var(--sp-6); font-size:14px;}
+  th,td{text-align:left; padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--border);}
+  th{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-muted);}
+
+  footer{padding:var(--sp-8) 0; text-align:center; color:var(--ink-muted); font-size:13px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <span class="seal" style="--sz:34px;">
+        <svg viewBox="0 0 24 24"><path d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-4-3-7-6-11z" fill="currentColor"/></svg>
+      </span>
+      Tamga Green
+    </div>
+    <div class="navlinks">
+      <a href="#colors">Цвет</a>
+      <a href="#type">Шрифты</a>
+      <a href="#grid">Сетка</a>
+      <a href="#buttons">Кнопки</a>
+      <a href="#cards">Карточки</a>
+      <a href="#icons">Иконки</a>
+      <a href="#motion">Анимация</a>
+      <a href="#responsive">Адаптив</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <div>
+    <p class="eyebrow">Этап 3 · Design System</p>
+    <h1>Печать качества<br><span class="accent">для живого товара.</span></h1>
+    <p class="lede">Дизайн-система Tamga Green построена вокруг образа тамги — родового клейма, которым столетиями удостоверяли подлинность и происхождение. На маркетплейсе это клеймо становится знаком верификации поставщика: печать доверия на карточке товара, в статусе заказа, в состоянии загрузки.</p>
+  </div>
+  <div class="hero-visual">
+    <span class="seal stamp-ink" style="position:relative;">
+      <span class="seal-ring"></span>
+      <svg viewBox="0 0 24 24"><path d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-4-3-7-6-11z" fill="currentColor"/></svg>
+    </span>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="colors">
+    <p class="eyebrow">01 · Цвет</p>
+    <h2>Палитра</h2>
+    <p class="lede">Зелёный доминирует — это витрина живых растений, а не абстрактный SaaS. Охра «тамги» используется точечно: только для доверия, верификации и фокуса, а не как декоративный акцент.</p>
+    <div class="grid-colors">
+      <div class="swatch"><div class="fill" style="background:var(--canopy)"></div><div class="meta"><div class="name">Canopy</div><div class="hex">#1F3D2B</div><div class="use">Тёмные поверхности, заголовки</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--sap)"></div><div class="meta"><div class="name">Sap</div><div class="hex">#3E7D44</div><div class="use">Основное действие, primary CTA</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--sprout)"></div><div class="meta"><div class="name">Sprout</div><div class="hex">#7FB069</div><div class="use">Успех, «в наличии», теги</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--stamp)"></div><div class="meta"><div class="name">Stamp</div><div class="hex">#B8873A</div><div class="use">Верификация, печать, фокус</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--paper); border-bottom:1px solid var(--border)"></div><div class="meta"><div class="name">Paper</div><div class="hex">#F5F3E8</div><div class="use">Фон приложения</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--ink)"></div><div class="meta"><div class="name">Ink</div><div class="hex">#1E2119</div><div class="use">Текст</div></div></div>
+    </div>
+    <div class="grid-colors" style="margin-top:var(--sp-4)">
+      <div class="swatch"><div class="fill" style="background:var(--error)"></div><div class="meta"><div class="name">Error</div><div class="hex">#A3402D</div><div class="use">Ошибки, деструктивные действия</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--warning)"></div><div class="meta"><div class="name">Warning</div><div class="hex">#C99A3E</div><div class="use">Предупреждения (остаток мал)</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--ink-muted)"></div><div class="meta"><div class="name">Ink Muted</div><div class="hex">#5B6259</div><div class="use">Второстепенный текст</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--border)"></div><div class="meta"><div class="name">Border</div><div class="hex">#D9D5C3</div><div class="use">Разделители, обводки</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--paper-deep)"></div><div class="meta"><div class="name">Paper Deep</div><div class="hex">#ECE9DA</div><div class="use">Фон секций/карточек</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--stamp-bg)"></div><div class="meta"><div class="name">Stamp BG</div><div class="hex">#F3E8D2</div><div class="use">Подложка бейджей верификации</div></div></div>
+    </div>
+  </section>
+
+  <section id="type">
+    <p class="eyebrow">02 · Типографика</p>
+    <h2>Три роли, три характера</h2>
+    <p class="lede">Fraunces — для заголовков и печати (тёплый, «гравированный» контраст штрихов). Inter — рабочая лошадка интерфейса и плотных B2B-таблиц. IBM Plex Mono — для всего, что должно читаться как точные данные: цены, SKU, сроки, остатки.</p>
+    <div class="type-cols">
+      <div class="type-card">
+        <h4>Display / Fraunces</h4>
+        <div class="big" style="font-family:var(--font-display); font-weight:600;">Aa Разнообразие</div>
+        <div class="role">Заголовки H1–H3, печать, hero</div>
+      </div>
+      <div class="type-card">
+        <h4>Body / Inter</h4>
+        <div class="big" style="font-family:var(--font-body); font-weight:600;">Aa Интерфейс</div>
+        <div class="role">UI, тексты, формы, таблицы</div>
+      </div>
+      <div class="type-card">
+        <h4>Utility / IBM Plex Mono</h4>
+        <div class="big" style="font-family:var(--font-mono); font-weight:500;">Aa 12,40 €</div>
+        <div class="role">Цены, артикулы, метки, коды</div>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--sp-6)">
+      <div class="type-row"><span class="tag">H1 · 48/56 · 600</span><span class="type-sample" style="font-size:48px;">Каталог питомников</span></div>
+      <div class="type-row"><span class="tag">H2 · 34/40 · 600</span><span class="type-sample" style="font-size:34px;">Верификация поставщика</span></div>
+      <div class="type-row"><span class="tag">H3 · 22/28 · 600</span><span class="type-sample" style="font-size:22px;">Ступенчатые цены</span></div>
+      <div class="type-row"><span class="tag">Body L · 17/26 · 400</span><span class="type-body-sample" style="font-size:17px;">Основной текст карточек и описаний товара.</span></div>
+      <div class="type-row"><span class="tag">Body M · 15/24 · 400</span><span class="type-body-sample" style="font-size:15px;">Стандартный текст интерфейса, формы, таблицы.</span></div>
+      <div class="type-row"><span class="tag">Caption · 13/18 · 500</span><span class="type-body-sample" style="font-size:13px; color:var(--ink-muted);">Второстепенные подписи и метаданные</span></div>
+      <div class="type-row"><span class="tag">Mono · 13/18 · 500</span><span class="type-mono-sample" style="font-size:13px;">SKU-04521 · остаток обновлён 2ч назад</span></div>
+    </div>
+  </section>
+
+  <section id="grid">
+    <p class="eyebrow">03 · Интервалы и сетка</p>
+    <h2>Шкала 4px и 12-колоночная сетка</h2>
+    <p class="lede">Контейнер максимум 1280px, отступ страницы 24px (desktop) / 16px (mobile). Все внутренние отступы кратны базовой единице 4px.</p>
+    <div style="margin-top:var(--sp-6)">
+      <div class="space-row"><span class="space-label">4 — sp-1</span><span class="space-bar" style="width:4px"></span></div>
+      <div class="space-row"><span class="space-label">8 — sp-2</span><span class="space-bar" style="width:8px"></span></div>
+      <div class="space-row"><span class="space-label">12 — sp-3</span><span class="space-bar" style="width:12px"></span></div>
+      <div class="space-row"><span class="space-label">16 — sp-4</span><span class="space-bar" style="width:16px"></span></div>
+      <div class="space-row"><span class="space-label">24 — sp-5</span><span class="space-bar" style="width:24px"></span></div>
+      <div class="space-row"><span class="space-label">32 — sp-6</span><span class="space-bar" style="width:32px"></span></div>
+      <div class="space-row"><span class="space-label">48 — sp-7</span><span class="space-bar" style="width:48px"></span></div>
+      <div class="space-row"><span class="space-label">64 — sp-8</span><span class="space-bar" style="width:64px"></span></div>
+      <div class="space-row"><span class="space-label">96 — sp-9</span><span class="space-bar" style="width:96px"></span></div>
+    </div>
+    <p class="lede" style="margin-top:var(--sp-6)">12 колонок, gutter 8–24px в зависимости от breakpoint:</p>
+    <div class="col-demo">
+      <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    </div>
+  </section>
+
+  <section id="buttons">
+    <p class="eyebrow">04 · Кнопки</p>
+    <h2>Состояния действия</h2>
+    <p class="lede">Один primary-глагол на экран. Наведите курсор на кнопки ниже — hover и active работают по-настоящему; loading и disabled показаны как явные состояния.</p>
+    <div class="btn-grid">
+      <div><span class="state-label">default → hover</span><button class="btn btn-primary">Оформить заказ</button></div>
+      <div><span class="state-label">secondary</span><button class="btn btn-secondary">Сравнить</button></div>
+      <div><span class="state-label">ghost</span><button class="btn btn-ghost">Отмена</button></div>
+      <div><span class="state-label">destructive</span><button class="btn btn-destructive">Удалить товар</button></div>
+      <div><span class="state-label">disabled</span><button class="btn btn-primary" disabled>Недоступно</button></div>
+      <div><span class="state-label">loading</span><button class="btn btn-primary is-loading">Отправка</button></div>
+    </div>
+  </section>
+
+  <section id="cards">
+    <p class="eyebrow">05 · Карточки</p>
+    <h2>От бирки питомника до статистики</h2>
+    <p class="lede">Карточка товара визуально цитирует настоящую бирку саженца: фото сверху, «пробитое отверстие» на стыке с блоком цены. Наведите курсор — карточка приподнимается.</p>
+    <div class="cards-grid">
+      <div class="tag-card">
+        <div class="img"></div>
+        <div class="label">
+          <div class="plant-name">Туя западная «Смарагд»</div>
+          <div class="plant-lat">Thuja occidentalis</div>
+          <div class="row"><span class="price">от 4,20 €/шт</span><span class="pill">В наличии</span></div>
+        </div>
+      </div>
+      <div class="supplier-card">
+        <span class="seal" style="--sz:48px;"><svg viewBox="0 0 24 24"><path d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-4-3-7-6-11z" fill="currentColor"/></svg></span>
+        <div>
+          <div style="font-family:var(--font-display); font-weight:600; font-size:17px;">Kwekerij Van Doorn</div>
+          <div style="font-size:13px; color:var(--ink-muted);">Нидерланды · 34 категории товара</div>
+          <span class="verified-badge"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>Верифицирован</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="lab">GMV за квартал</div>
+        <div class="num">€ 184k</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="icons">
+    <p class="eyebrow">06 · Иконки</p>
+    <h2>Единый штрих 1.6px, без заливки</h2>
+    <p class="lede">Линейный стиль, скруглённые концы, зрительный вес одинаков независимо от сюжета — от листа до грузовика.</p>
+    <div class="icon-grid">
+      <div class="icon-tile"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-4 3-7 6-7 10a7 7 0 0014 0c0-4-3-7-7-10z"/><path d="M12 13v8"/></svg><div class="lab">Растение</div></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><div class="lab">Поиск</div></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.6 12.4a2 2 0 002 1.6h8.8a2 2 0 002-1.6L21 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg><div class="lab">Корзина заявок</div></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="1"/><path d="M16 10h4l3 3v4h-7"/><circle cx="6" cy="19" r="1.6"/><circle cx="18" cy="19" r="1.6"/></svg><div class="lab">Доставка</div></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 1-4.5 4.3L17.5 20 12 16.8 6.5 20l1-6.7L3 9l6-1z"/></svg><div class="lab">Печать / верификация</div></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V10M10 20V4M17 20v-7"/></svg><div class="lab">Аналитика</div></div>
+    </div>
+  </section>
+
+  <section id="elevation">
+    <p class="eyebrow">07 · Тени и скругления</p>
+    <h2>Тёплая, а не чёрная тень</h2>
+    <p class="lede">Тень строится на цвете Ink с низкой непрозрачностью — так поверхности не выглядят «прилепленными к стеклу».</p>
+    <div class="flat-grid">
+      <div class="flat-box" style="box-shadow:var(--shadow-sm)">shadow-sm<br>карточки в списке</div>
+      <div class="flat-box" style="box-shadow:var(--shadow-md)">shadow-md<br>всплывающие панели</div>
+      <div class="flat-box" style="box-shadow:var(--shadow-lg)">shadow-lg<br>модальные окна, hover-приподнятость</div>
+    </div>
+    <div class="radius-grid">
+      <div class="radius-item" style="border-radius:var(--r-sm)">sm · 4px<br>инпуты</div>
+      <div class="radius-item" style="border-radius:var(--r-md)">md · 8px<br>кнопки/карты</div>
+      <div class="radius-item" style="border-radius:var(--r-lg)">lg · 16px<br>модалки/hero</div>
+      <div class="radius-item" style="border-radius:var(--r-full)">full<br>бейджи</div>
+    </div>
+  </section>
+
+  <section id="motion">
+    <p class="eyebrow">08 · Анимация</p>
+    <h2>Движение — это подтверждение, а не украшение</h2>
+    <p class="lede">Правила: переходы 150–250мс на ease-out для микровзаимодействий; загрузка живого товара (остатки, цены) никогда не должна выглядеть статичной — используем вращающуюся печать вместо нейтрального спиннера, чтобы состояние загрузки тоже нёсло бренд. Анимация отключается при <span style="font-family:var(--font-mono); font-size:13px;">prefers-reduced-motion</span>.</p>
+    <div class="motion-demo">
+      <div style="text-align:center;">
+        <span class="seal spin-seal" style="--sz:56px;"><svg viewBox="0 0 24 24"><path d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-4-3-7-6-11z" fill="currentColor"/></svg></span>
+        <div class="state-label" style="margin-top:8px;">Loading — печать вращается</div>
+      </div>
+      <div class="hover-tile">
+        Наведите курсор
+        <div class="state-label" style="margin-top:6px;">hover: подъём + тень</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="responsive">
+    <p class="eyebrow">09 · Адаптивность</p>
+    <h2>Три брейкпоинта</h2>
+    <table>
+      <tr><th>Диапазон</th><th>Колонки</th><th>Контейнер</th><th>Навигация</th></tr>
+      <tr><td>Mobile · &lt;768px</td><td>4 колонки, gutter 8px</td><td>100% — отступ 16px</td><td>нижняя таб-панель</td></tr>
+      <tr><td>Tablet · 768–1199px</td><td>8 колонок, gutter 16px</td><td>100% — отступ 24px</td><td>верхнее меню + выезжающие панели</td></tr>
+      <tr><td>Desktop · ≥1200px</td><td>12 колонок, gutter 24px</td><td>max-width 1280px</td><td>верхнее меню + боковая панель</td></tr>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">Tamga Green — Design System · Этап 3 · токены выше готовы к передаче в разработку как CSS custom properties</div>
+</footer>
+
+</body>
+</html>

@@ -38,6 +38,10 @@
   `carts`, `favorites`, `disputes`, `reviews`, `conversations`, `messages`,
   `notifications`, `ai_chat_sessions/messages`, `companies`, `verification_documents`)
   переносятся как есть с FK, переименованными на `plant_id` (раздел 8 сверки).
+- **Slug товара.** Генерируется транслитом из русского названия (детерминированно,
+  на этапе seed/импорта), а не хранится отдельным полем в исходных данных — на
+  Phase 5 (импорт Excel/CMS) поставщик сможет переопределить slug вручную, если
+  автоматический транслит даст неудачный URL.
 
 ### Ревизия существующего каркаса (из прошлой офлайн-сессии, без доступа в интернет)
 
@@ -61,35 +65,98 @@
 
 ---
 
-## Phase 1 — Каркас
+## Phase 1 — Каркас ✅ (сделано, отчёт ниже)
 
-- [ ] Скопировать/интегрировать существующий каркас в репозиторий (App Router,
-      route groups `(public)/(auth)/(supplier)/(buyer)/(admin)` — System Architecture §2).
-- [ ] `npm install`, поднять `supabase init && supabase start` (Docker), проверить
-      `.env.local` из `.env.example`.
-- [ ] Миграция `0002_transactional.sql`: `companies`, `verification_documents`,
-      `users` (Database Design §4, FK на `auth.users`), `orders`, `order_items`,
-      `order_status_history`, `shipments`, `carts`, `cart_items`, `conversations`,
-      `messages`, `reviews`, `disputes`, `favorites`, `notifications`,
-      `ai_chat_sessions`, `ai_chat_messages`, `requests` (§4), `settings`, `ai_cache`
-      (+`pgvector` extension) — из Database Design §4/§6 + Architecture §7 (сверка §8).
-      Обновить FK старой миграции 0001, где нужно `plant_id`.
-- [ ] Миграция `0003_content.sql`: `landscape_solutions`, `solution_plants`,
-      `projects`, `project_solutions`, `gallery_images`, `blog_categories`,
-      `blog_posts`, `faq_categories`, `faq_items`, `plant_compatibility`
-      (Plant Catalog §8) — контентный слой из Database Design §5.
-- [ ] Миграция `0004_audit.sql`: `audit_log`, `price_change_log` (Admin Panel §9, §4.2).
-- [ ] RLS: политика на **каждую** таблицу без исключений (Database Design §7.4) —
-      публичное чтение подтверждённого контента + владелец управляет своим +
-      отдельная политика для `admin`. Пройтись по чек-листу — не должно остаться
-      таблиц без `enable row level security`.
-- [ ] Обновить `seed.sql`: добавить компанию «Питомник Дебский» (approved),
-      привязать `plants.company_id`, базовые `prices`/`availability` из `p`/`oos`
-      полей JSON.
-- [ ] `next-intl`: locale `en` + `ru`, middleware для локали (уже есть заготовка —
-      проверить/доработать).
-- [ ] **DoD:** `npm run build` проходит без ошибок на каркасе (пустые страницы-заглушки
-      по route groups допустимы).
+- [x] Интегрирован существующий каркас в репозиторий (App Router, `[locale]`,
+      route group `(public)` — остальные группы `(auth)/(supplier)/(buyer)/(admin)`
+      появятся по мере кода в Phase 2/4/5, пустых заглушек под них не заводил,
+      т.к. Next.js не требует директорий без содержимого).
+- [x] `npm install` — реально выполнен, зафиксирован `package-lock.json`.
+- [x] Миграция `0002_transactional.sql` — companies/verification_documents/users/
+      orders/order_items/order_status_history/shipments/carts/cart_items/
+      conversations/messages/reviews/disputes/favorites/notifications/
+      ai_chat_sessions/ai_chat_messages/ai_cache(+pgvector)/requests/settings +
+      владельческие RLS-политики для каталога (plants/prices/availability/
+      plant_images/plant_attribute_values/translations), которые 0001 сознательно
+      оставил на потом.
+- [x] Миграция `0003_content.sql` — landscape_solutions/solution_plants/projects/
+      project_solutions/gallery_images/blog_*/faq_*/plant_compatibility.
+- [x] Миграция `0004_audit.sql` — audit_log/price_change_log.
+- [x] RLS проверена программно: **все 40 таблиц** имеют `relrowsecurity=true` и
+      ≥1 политику (запрос к `pg_class`/`pg_policy`, см. отчёт ниже) — ни одна не
+      пропущена.
+- [x] `seed.sql` пересобран скриптом `scripts/generate-seed.mjs` из
+      `supabase/seed-data/plants-catalog.json`: компания «Питомник «Дебский»»
+      (approved, KG) + 165 plants с `company_id` + переводы названий категорий
+      (ru/en) + определения атрибутов каталога (Plant Catalog §2).
+- [x] next-intl: `en`+`ru`, middleware — исправлен путь `i18n.ts` → `i18n/request.ts`
+      (Next.js 15 иначе шлёт deprecation-warning).
+- [x] **DoD выполнен:** `npm run build` реально запущен и проходит без ошибок
+      (не просто "должен собраться" — фактический прогон в этой сессии). Плюс
+      `npm run typecheck` и `npm run lint` тоже чистые (не входили в DoD, но раз
+      уж проверяли — сделали).
+
+### Отчёт Phase 1
+
+**Ограничение среды.** В этой облачной сессии нет Docker-демона — `supabase start`
+не может быть запущен здесь физически. Вместо этого миграции провалидированы
+против нативного Postgres 16 (пакет уже стоял в системе) с временной stub-схемой
+`auth.users`/`auth.uid()`/`auth.role()` — это подтверждает корректность SQL и RLS-
+логики, но не проверяет реальные Supabase Auth/Storage/Realtime. Зафиксировано в
+README.md — пользователю нужно прогнать `supabase start` на своей машине с Docker
+как первый шаг (см. README, "Что нужно установить").
+
+**RLS smoke-test (не просто "политика создана", а реально сработала).** Создал
+роль `authenticated` (без bypass RLS, как у настоящей Supabase-роли) и двух тестовых
+поставщиков; User B не смог ни увидеть, ни обновить черновой товар User A
+(`update ... where slug='plant-a-draft'` от лица B вернул `UPDATE 0`). Полноценный
+тест на реальных HTTP-запросах с JWT — по плану Phase 2.
+
+**[решено самостоятельно] — находки/адаптации в процессе Phase 1:**
+
+- **`translations` не мёржится через PostgREST embedding.** Унаследованный код
+  каталога (`getPlantsByCategory`/`getCategories`) пытался делать
+  `.from("plants").select("... translations!inner(...)")` — но `translations`
+  полиморфна и **сознательно без FK** на `plants` (Database Design §1, принцип 4).
+  PostgREST embedding требует реального FK, значит это никогда не заработало бы
+  в реальном Supabase, не только в типах. Переписал на два отдельных запроса
+  (plants+реальные FK-embeds, затем translations по `entity_id in (...)`) с мёржем
+  в коде и откатом на `en`, если для локали нет перевода (Architecture §11).
+- **`search_vector` нельзя поддерживать так, как описано в Architecture §9.1.**
+  Тот пример триггера читает `new.name->>'en'` — но Database Design §8 вынес
+  name/description в `translations`, так что на INSERT/UPDATE строки `plants`
+  перевода ещё не существует. Реализовал через пару триггеров: один на `plants`
+  (пересчёт при смене `latin_name`), другой на `translations` (пересчёт при
+  добавлении/изменении `name`/`description` для `entity_type='plant'`).
+- **Fraunces не имеет кириллических глифов** (Google Fonts отдаёт только
+  latin/latin-ext/vietnamese) — заголовки на `ru` будут рендериться системным
+  serif-фолбэком вместо Fraunces. Это ограничение самого шрифта, а не конфигурации;
+  альтернативного дисплей-шрифта с кириллицей документы не называют, менять токен
+  не стал — просто зафиксировал ограничение.
+- **Версии пакетов сдвинуты вперёд, как и предупреждала прошлая офлайн-сессия:**
+  `lucide-react` 0.383→^1.24 (0.383 не поддерживает React 19 в peerDependencies),
+  `@supabase/ssr` 0.5→^0.12 (0.5 давал несовместимые типы генериков с
+  `@supabase/supabase-js` 2.110, из-за чего вся типизация запросов схлопывалась
+  в `never`).
+- **`lib/supabase/types.ts` требует `Relationships`/`Views`/`Functions`/`Enums`/
+  `CompositeTypes`**, а не только `Row`/`Insert`/`Update` — без них дженерики
+  `@supabase/supabase-js` не резолвятся. Добавил корректные `Relationships` для
+  реальных FK (`plant_images`/`prices`/`availability` → `plants`).
+- **ESLint 9 flat config не существовал** (`next lint` спрашивал интерактивный
+  выбор) — создал `eslint.config.mjs` с `next/core-web-vitals` + `next/typescript`
+  напрямую, без диалога.
+- **`@tailwindcss/typography`** добавлен в `tailwind.config.ts` plugins и
+  `package.json` — Architecture §5 перечисляет оба плагина, в унаследованном
+  каркасе был только `forms`.
+- **`i18n.ts` → `i18n/request.ts`** — Next.js 15/next-intl помечают путь `./i18n.ts`
+  как deprecated, поправил путь и относительный импорт `messages/`.
+
+### Осталось на будущие фазы (не блокирует Phase 1 DoD)
+
+- [ ] Реальный прогон `supabase start`/`db reset` на машине с Docker (пользователь).
+- [ ] Значения `plant_attribute_values` по каждому товару — AI-пайплайн, Phase 3.
+- [ ] Route groups `(auth)/(supplier)/(buyer)/(admin)` — появятся вместе с кодом
+      Phase 2/4/5, не пустыми заглушками сейчас.
 
 ## Phase 2 — Аутентификация и онбординг
 

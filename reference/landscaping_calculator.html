@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор стоимости озеленения — Питомник «Дебский»</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canopy:#1F3D2B; --sap:#3E7D44; --sap-hover:#2F6435; --sprout:#7FB069; --sprout-bg:#E7F0DF;
+    --stamp:#B8873A; --stamp-bg:#F3E8D2; --paper:#F5F3E8; --paper-deep:#ECE9DA;
+    --ink:#1E2119; --ink-muted:#5B6259; --border:#D9D5C3; --error:#A3402D; --error-bg:#F3E1DB;
+    --r-sm:4px; --r-md:8px; --r-lg:16px;
+    --shadow-sm:0 1px 2px rgba(30,33,25,.08),0 1px 1px rgba(30,33,25,.04);
+    --shadow-md:0 4px 10px rgba(30,33,25,.10),0 2px 4px rgba(30,33,25,.06);
+    --shadow-lg:0 16px 32px rgba(30,33,25,.16),0 4px 10px rgba(30,33,25,.08);
+    --font-display:'Fraunces',serif; --font-body:'Inter',sans-serif; --font-mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.5;}
+  h1,h2,h3{font-family:var(--font-display); font-weight:700; margin:0 0 6px;}
+  :focus-visible{outline:2px solid var(--stamp); outline-offset:2px;}
+
+  header.top{background:var(--canopy); color:var(--paper); padding:20px 20px;}
+  header.top h1{font-size:22px; color:#fff;}
+  header.top p{margin:4px 0 0; color:rgba(245,243,232,.75); font-size:13px;}
+
+  .layout{max-width:1200px; margin:0 auto; padding:20px; display:grid; grid-template-columns:1fr 380px; gap:20px; align-items:start;}
+  @media (max-width:960px){ .layout{grid-template-columns:1fr; padding:14px; padding-bottom:220px;} }
+
+  .card{background:#fff; border:1px solid var(--border); border-radius:var(--r-lg); padding:18px; margin-bottom:16px; box-shadow:var(--shadow-sm);}
+  .card h2{font-size:17px;}
+  .eyebrow{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--stamp); margin-bottom:4px;}
+  .hint{font-size:12.5px; color:var(--ink-muted); margin-top:4px;}
+
+  label{font-size:13px; font-weight:600; display:block; margin-bottom:5px;}
+  input[type=number], input[type=text], input[type=tel]{
+    width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:var(--r-sm);
+    font-family:var(--font-body); font-size:14px; background:var(--paper);
+  }
+  input:focus{outline:2px solid var(--stamp); outline-offset:1px;}
+
+  .row{display:flex; gap:14px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:160px;}
+
+  .radio-group{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
+  .radio-opt{display:flex; align-items:center; gap:8px; font-size:13.5px; padding:9px 10px; border:1px solid var(--border); border-radius:var(--r-sm); cursor:pointer;}
+  .radio-opt input{width:auto;}
+  .radio-opt.checked{border-color:var(--sap); background:var(--sprout-bg);}
+
+  .check-row{display:flex; align-items:flex-start; gap:8px; font-size:13.5px; margin-top:10px; cursor:pointer;}
+  .check-row input{margin-top:2px;}
+
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .tab{font-family:var(--font-mono); font-size:12px; padding:7px 12px; border-radius:999px; border:1px solid var(--border); background:var(--paper); cursor:pointer; color:var(--ink-muted);}
+  .tab.active{background:var(--sap); color:#fff; border-color:var(--sap);}
+
+  .plant-list{max-height:420px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-md);}
+  .plant-row{display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border-bottom:1px solid var(--border); gap:10px;}
+  .plant-row:last-child{border-bottom:none;}
+  .plant-name{font-size:13.5px; flex:1;}
+  .plant-oos{font-family:var(--font-mono); font-size:10px; color:var(--error); background:var(--error-bg); padding:1px 6px; border-radius:999px; margin-left:6px;}
+  .plant-price{font-family:var(--font-mono); font-size:13px; color:var(--ink-muted); white-space:nowrap;}
+  .add-btn{width:28px; height:28px; border-radius:50%; border:none; background:var(--sap); color:#fff; font-size:16px; cursor:pointer; flex-shrink:0;}
+  .add-btn:hover{background:var(--sap-hover);}
+
+  .cart-item{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;}
+  .cart-item:last-child{border-bottom:none;}
+  .cart-item .nm{flex:1;}
+  .qty-ctrl{display:flex; align-items:center; gap:4px;}
+  .qty-ctrl button{width:22px; height:22px; border-radius:4px; border:1px solid var(--border); background:var(--paper); cursor:pointer; font-size:13px;}
+  .qty-ctrl span{font-family:var(--font-mono); min-width:20px; text-align:center;}
+  .rm-btn{background:none; border:none; color:var(--error); cursor:pointer; font-size:14px;}
+
+  .empty{color:var(--ink-muted); font-size:13px; padding:14px; text-align:center;}
+
+  /* summary */
+  .summary{position:sticky; top:16px;}
+  .summary .total{font-family:var(--font-display); font-size:30px; color:var(--canopy); margin:6px 0;}
+  .summary .sec{display:flex; justify-content:space-between; padding:6px 0; font-size:13.5px; border-bottom:1px dashed var(--border);}
+  .summary .sec:last-of-type{border-bottom:none;}
+  .summary .sec .val{font-family:var(--font-mono);}
+  .note-warn{background:var(--stamp-bg); color:#6b4d1a; font-size:12px; padding:8px 10px; border-radius:var(--r-sm); margin-top:8px;}
+
+  .btn{font-weight:600; font-size:14px; border-radius:var(--r-md); padding:11px 18px; border:1px solid transparent; cursor:pointer; width:100%;}
+  .btn-primary{background:var(--sap); color:#fff;}
+  .btn-primary:hover{background:var(--sap-hover);}
+  .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
+
+  .disclaimer{font-size:11.5px; color:var(--ink-muted); margin-top:10px; line-height:1.5;}
+
+  details.admin{margin-top:20px; border:1px dashed var(--stamp); border-radius:var(--r-md); padding:10px 14px; background:var(--stamp-bg);}
+  details.admin summary{cursor:pointer; font-family:var(--font-mono); font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:#6b4d1a;}
+  .admin-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; margin-top:12px;}
+  .admin-grid label{font-size:11.5px;}
+  .admin-note{font-size:11.5px; color:#6b4d1a; margin-top:8px;}
+
+  footer{text-align:center; font-size:11.5px; color:var(--ink-muted); padding:20px;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Калькулятор стоимости озеленения</h1>
+  <p>Питомник «Дебский» · Кыргызстан · цены в сомах</p>
+</header>
+
+<div class="layout">
+  <div>
+
+    <div class="card">
+      <p class="eyebrow">Шаг 1</p>
+      <h2>Площадь участка</h2>
+      <div class="row">
+        <div>
+          <label for="siteArea">Общая площадь, м²</label>
+          <input type="number" id="siteArea" min="0" value="0" oninput="onSiteAreaChange()">
+        </div>
+      </div>
+      <p class="hint">Используется для расчёта газона и комплексных работ. Декор считается отдельно (шаг 4).</p>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Шаг 2</p>
+      <h2>Растения</h2>
+      <div class="tabs" id="tabs"></div>
+      <input type="text" id="search" placeholder="Поиск по названию…" oninput="renderCatalog()" style="margin-bottom:10px;">
+      <div class="plant-list" id="plantList"></div>
+
+      <h3 style="margin-top:18px; font-size:14px;">Смета — растения (<span id="cartCount">0</span>)</h3>
+      <div id="cartList"></div>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Шаг 3</p>
+      <h2>Газон</h2>
+      <div class="radio-group" id="lawnGroup">
+        <label class="radio-opt" id="lawnOptNone"><input type="radio" name="lawn" value="none" checked onchange="onLawnChange()"> Газон не нужен</label>
+        <label class="radio-opt" id="lawnOptReady"><input type="radio" name="lawn" value="ready" onchange="onLawnChange()"> Земля готова — <span class="rate-lawnReady"></span> сом/м²</label>
+        <label class="radio-opt" id="lawnOptPrep"><input type="radio" name="lawn" value="prep" onchange="onLawnChange()"> Требуется подготовка земли — <span class="rate-lawnPrep"></span> сом/м²</label>
+      </div>
+      <label class="check-row"><input type="checkbox" id="autopoliv" onchange="onLawnChange()"> Автополив (+<span class="rate-autopoliv"></span> сом/м²)</label>
+      <p class="hint">Автополив — без учёта насоса и блока управления, стоимость уточняется отдельно.</p>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Шаг 4</p>
+      <h2>Декор</h2>
+      <div class="row">
+        <div>
+          <label for="stonesArea">Камни, м²</label>
+          <input type="number" id="stonesArea" min="0" value="0" oninput="renderSummary()">
+          <p class="hint"><span class="rate-stones"></span> сом/м²</p>
+        </div>
+        <div>
+          <label for="barkArea">Кора, м²</label>
+          <input type="number" id="barkArea" min="0" value="0" oninput="renderSummary()">
+          <p class="hint"><span class="rate-bark"></span> сом/м²</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Шаг 5</p>
+      <h2>Посадка и ландшафтный дизайн</h2>
+      <label class="check-row"><input type="checkbox" id="worksCheck" onchange="renderSummary()"> Нужны комплексные работы по посадке и озеленению участка</label>
+      <p class="hint" id="worksHint"></p>
+    </div>
+
+  </div>
+
+  <div class="summary card">
+    <p class="eyebrow">Смета</p>
+    <h2>Итог</h2>
+    <div id="summaryBody"></div>
+    <div class="total" id="totalSum">0 сом</div>
+    <div id="worksWarn"></div>
+
+    <div style="margin-top:16px;">
+      <label for="custName">Имя</label>
+      <input type="text" id="custName" placeholder="Как к вам обращаться">
+    </div>
+    <div style="margin-top:10px;">
+      <label for="custPhone">Телефон</label>
+      <input type="tel" id="custPhone" placeholder="+996 ...">
+    </div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-primary" onclick="submitRequest()">Отправить заявку в WhatsApp</button>
+    </div>
+
+    <p class="disclaimer">Расчёт ориентировочный. Точную стоимость подтверждает менеджер после осмотра участка.</p>
+
+    <details class="admin">
+      <summary>Настройки цен (для менеджера)</summary>
+      <div class="admin-grid">
+        <div><label>Газон, готовая земля (сом/м²)</label><input type="number" id="rate_lawnReady" oninput="onRatesChange()"></div>
+        <div><label>Газон, требует подготовки (сом/м²)</label><input type="number" id="rate_lawnPrep" oninput="onRatesChange()"></div>
+        <div><label>Автополив, доплата (сом/м²)</label><input type="number" id="rate_autopoliv" oninput="onRatesChange()"></div>
+        <div><label>Камни (сом/м²)</label><input type="number" id="rate_stones" oninput="onRatesChange()"></div>
+        <div><label>Кора (сом/м²)</label><input type="number" id="rate_bark" oninput="onRatesChange()"></div>
+        <div><label>Комплексные работы (сом/м²)</label><input type="number" id="rate_work" placeholder="не задано" oninput="onRatesChange()"></div>
+        <div><label>WhatsApp менеджера (номер)</label><input type="text" id="rate_phone" oninput="onRatesChange()"></div>
+      </div>
+      <p class="admin-note">Изменения действуют в рамках текущей сессии в браузере. Для постоянного сохранения ставок нужно подключить это поле к серверу/базе данных сайта.</p>
+    </details>
+  </div>
+</div>
+
+<footer>Питомник «Дебский» — калькулятор носит справочный характер</footer>
+
+<script>
+const CATALOG = {"conifer":[{"n":"Ель канадская Коника Со2","p":900},{"n":"Ель колючая Глаука Глобоза Co5 (Picea pungens Glauca Globosa)","p":3500},{"n":"Ель колючая Глаука Глобоза Co5 Pa ШТАМБ (Picea pungens Glauca Globosa)","p":7300},{"n":"Ель колючая Супер Блю Сидлинг Со5 (Picea pungens Super Blue Seedling)","p":2500},{"n":"Ель обыкновенная Литтл Гем Со2","p":1200},{"n":"Ель обыкновенная Нидиформис Со2","p":1200},{"n":"Ель обыкновенная Нидиформис Со5","p":2000},{"n":"Ель сербская Карел Со2","p":1000},{"n":"Лиственница американская Американ Пай Co5 Pa (Larix lariciana American Pie)","p":3400},{"n":"Лиственница Европейская Пендула Co5 Pa ШТАМБ (Larix decidua Pendula)","p":3400},{"n":"Можжевельник виргинский Скайрокет Со2","p":1100},{"n":"Можжевельник горизонтальный Андорра Компакта Со2","p":1100},{"n":"Можжевельник горизонтальный Андорра Компакта Со5","p":1900},{"n":"Можжевельник горизонтальный Блю Чип Со5","p":1900},{"n":"Можжевельник горизонтальный Вилтони Со2","p":1100},{"n":"Можжевельник горизонтальный Глаука Со2","p":1100},{"n":"Можжевельник горизонтальный Лайм Глоу Со2","p":1100},{"n":"Можжевельник китайский Блю Альпс Со5","p":2000},{"n":"Можжевельник китайский Стрикта Со2","p":1100},{"n":"Можжевельник лежачий Нана Со2","p":1200},{"n":"Можжевельник обыкновенный Гольдшатц Co5 Pa ШТАМБ 60-80 (Juniperus communis Goldschatz)","p":6000},{"n":"Можжевельник обыкновенный Гольдшатц Со2","p":1100},{"n":"Можжевельник обыкновенный Грин Карпет Со2","p":1100},{"n":"Можжевельник обыкновенный Репанда Со2","p":1100},{"n":"Можжевельник обыкновенный Репанда Со5","p":2000},{"n":"Можжевельник обыкновенный Хиберника Со2","p":1100},{"n":"Можжевельник обыкновенный Хиберника Со5","p":2000},{"n":"Можжевельник прибрежный Шлягер Со2","p":1100},{"n":"Можжевельник прибрежный Шлягер Со5","p":1900},{"n":"Можжевельник скальный Блю Арроу Co10","p":3900},{"n":"Можжевельник скальный Блю Эрроу Co5 (Juniperus scopulorum Blue Arrow)","p":2500},{"n":"Можжевельник скальный Блю Эрроу Со2","p":1500},{"n":"Можжевельник средний Голд Коаст Co2","p":1400},{"n":"Можжевельник средний Голд Стар Со2","p":1400},{"n":"Можжевельник средний Кинг оф Спринг Со2","p":1400},{"n":"Можжевельник средний Минт Джулеп Со2","p":1200},{"n":"Можжевельник средний Минт Джулеп Со5","p":2200},{"n":"Можжевельник средний Хетци Со5","p":2100},{"n":"Можжевельник чешуйчатый блю Карпет Со2","p":1200},{"n":"Можжевельник чешуйчатый Блю Свид Со2","p":1200},{"n":"Можжевельник чешуйчатый Блю Стар Со2","p":1400},{"n":"Можжевельник чешуйчатый Блю Стар Со5","p":2200},{"n":"Сосна горная Бенджамин Co5 (Pinus mugo Benjamin)","p":3500},{"n":"Сосна горная Мугус Со2","p":1000},{"n":"Сосна горная Мугус Со5","p":2000},{"n":"Сосна горная Пумилио (2 л)","p":1000},{"n":"Сосна горная Пумилио (5 л)","p":2000},{"n":"Сосна густоцветковая Алис Веркейд Co5 (Pinus densiflora Alice Verkade)","p":3300},{"n":"Сосна густоцветковая Тамойошо Компакта Co5 (Pinus densiflora Tamoyosho Compacta)","p":3500},{"n":"Сосна Чёрная Нана Co5 (Pinus nigra Nana)","p":3500},{"n":"Сосна Чёрная Со2","p":1000},{"n":"Тис средний Хиксии (2 л)","p":1000},{"n":"Тис средний Хиксии (5 л)","p":2000},{"n":"Тис средний Хилли (2 л)","p":1000},{"n":"Тис средний Хилли (5 л)","p":2200},{"n":"Тис ягодный Давид Со5","p":2200},{"n":"Туя западная Брабант (100-120 см) Со5","p":1400},{"n":"Туя западная Брабант (120-140 см) Со10","p":1700},{"n":"Туя западная Брабант Co10 140-160 (Thuja occidentalis Brabant)","p":2400},{"n":"Туя западная Брабант Co10 160-180 (Thuja occidentalis Brabant)","p":3000},{"n":"Туя западная Голден Смарагд Со2","p":1200},{"n":"Туя западная Даника Aypea Со2","p":1000},{"n":"Туя западная Даника Со2","p":1000},{"n":"Туя западная Даника Со5","p":2200},{"n":"Туя западная Литл Чемпион Co5","p":2200},{"n":"Туя западная Мирьям Со2","p":1200},{"n":"Туя западная Смарагд Co 5 -7,5 100-120 (Thuja occidentalis Smaragd)","p":1700},{"n":"Туя западная Смарагд Co10 120-140 (Thuja occidentalis Smaragd)","p":2950},{"n":"Туя западная Смарагд Co10 140-160 (Thuja occidentalis Smaragd)","p":3300},{"n":"Туя западная Смарагд Co10 160-180 (Thuja occidentalis Smaragd)","p":4200},{"n":"Туя западная Смарагд Co10 180-200 (Thuja occidentalis Smaragd)","p":5900},{"n":"Туя западная Тайни Тим (2 л)","p":1000},{"n":"Туя западная Тини Тим (Co 10)","p":3900},{"n":"Туя западная Тини Тим (Co 5)","p":2200},{"n":"Туя западная Хозери (2 л)","p":1000},{"n":"Туя западная Хозери (Co 10)","p":3900},{"n":"Туя западная Хозери (Co 5)","p":2200}],"shrub":[{"n":"Барбарис Тунберга Адмирейшн Co2","p":1200},{"n":"Барбарис Тунберга Атропурпурса Нана Со2","p":900},{"n":"Барбарис Тунберга Багатель Со2","p":1000},{"n":"Барбарис Тунберга Голден Ринг Со2","p":950},{"n":"Барбарис Тунберга Дартс Ред Леди Co2","p":1200},{"n":"Барбарис Тунберга Конкорд Со2","p":950},{"n":"Барбарис Тунберга Оранж Санрайз Co2","p":1200},{"n":"Барбарис Тунберга Пинк Квин Co2","p":1200},{"n":"Барбарис Тунберга Ред Рокет Со2","p":950},{"n":"Барбарис Тунберга Со2-3","p":700},{"n":"Барбарис Тунберга Тайни Голд Со2","p":1300},{"n":"Барбарис Тунберга Эректа Со2","p":700},{"n":"Бересклет Форчуна Харлекин Со2","p":1000},{"n":"Бересклет Форчуна Эмеральд Гэити Co5Pa ШТАМБ 60-120 (Euonymus fortunei Emerald Gaiety)","p":2300},{"n":"Бересклет Форчуна Эмеральд энд Голд Со2","p":950},{"n":"Бересклет японский Ауреус, (Луна) Co5Pa ШТАМБ 60-120 (Euonymus japonica Aureus)","p":2300},{"n":"Буддлея Давида Лила Свитхарт Со2","p":1000},{"n":"Буддлея Давида Литл Пёрпл Co5 (Buddleja davidii B.C.Little Purple)","p":1500},{"n":"Буддлея Давида Литл Пинк Co5 (Buddleja davidii B.C.Little Pink)","p":1500},{"n":"Буддлея Давида Литл Сериз Co5 (Buddleja davidii B.C.Little Cerise)","p":1500},{"n":"Буддлея Давида Литтл Лилла Со2","p":1000},{"n":"Буддлея Давида Литтл Пёрпл Со2","p":1000},{"n":"Буддлея Давида Литтл Пинк Со2","p":1000},{"n":"Буддлея Давида Литтл Руби Со2","p":1000},{"n":"Буддлея Давида Литтл Сериз Со2","p":1000},{"n":"Вейгела Бристол Руби Со 2-3","p":1000},{"n":"Вейгела Бристол Сноуфлейк Co5 Pa ШТАМБ (Weigela Bristol Snowflake)","p":2200},{"n":"Вейгела Кандида Со 2-3","p":850},{"n":"Вейгела ранняя Розеа Co5 Pa ШТАМБ (Weigela praecox Rosea)","p":2200},{"n":"Вейгела цветущая Виктория Со 2-3","p":800},{"n":"Вейгела цветущая Минор Блэк Co5 Pa ШТАМБ (Weigela florida Minor Black)","p":2200},{"n":"Вейгела цветущая Пинк Поппет Со 2-3","p":1000},{"n":"Вейгела цветущая Пурпуреа Со 2-3","p":800},{"n":"Вейгела цветущая Танго Co5 Pa ШТАМБ (Weigela florida Tango)","p":2200},{"n":"Гортензия древовидная Аннабель Со2-3","p":900},{"n":"Гортензия Метельчатая Бобо Co5 (Hydrangea paniculata Bobo)","p":1600},{"n":"Гортензия Метельчатая Бобо Co5 Pa ШТАМБ (Hydrangea paniculata Bobo)","p":2500},{"n":"Гортензия метельчатая Бомбшелл Co5 (Hydrangea paniculata Bombshell)","p":1600},{"n":"Гортензия метельчатая Геркулес Co5 (Hydrangea paniculata Hercules)","p":1600},{"n":"Гортензия Метельчатая Пинки Винки Co5 Pa ШТАМБ (Hydrangea paniculata Pinky Winky)","p":2500},{"n":"Гортензия Метельчатая Пинки Винки Со5 (Hydrangea paniculata Pinky Winky)","p":1600},{"n":"Гортензия метельчатая Полар Беар Co5 (Hydrangea paniculata Polar Bear)","p":1600},{"n":"Гортензия метельчатая Сандей Фрайз Co5 (Hydrangea paniculata Sundae Fraise)","p":1600},{"n":"Гортензия метельчатая Фрайз Мельба Co5 (Hydrangea paniculata Fraise Melba)","p":1600},{"n":"Дейция Распберри Сандей Co5 (Deutzia Raspberry Sundae)","p":2500},{"n":"Лещина Обыкновенная Со 2-3","p":700},{"n":"Пузыреплодник калинолистный Андре Co2","p":950},{"n":"Пузыреплодник калинолистный Дартс Голд Со 2-3","p":900},{"n":"Пузыреплодник калинолистный Диаболо Co2","p":900},{"n":"Пузыреплодник калинолистный Литл Джокер Co2","p":900},{"n":"Пузыреплодник калинолистный Ред Барон Со2","p":950},{"n":"Ракитник Боскоп Руби Со2","p":900},{"n":"Ракитник Голден Санлайт Со2","p":900},{"n":"Ракитник Голдфинч Со2","p":900},{"n":"Спирея японская Голден Принцесс Со2","p":1000},{"n":"Хеномелес превосходный Пинк Леди Со2","p":750}],"tree":[{"n":"Бук лесной (бук европейский) Co5 100-140 (Fagus sylvatica)","p":1300},{"n":"Бук Лесной Со2","p":950},{"n":"Гинкго Двулопастный Со 2-3","p":1000},{"n":"Гинкго Двулопастный Со5","p":1600},{"n":"Граб Обыкновенный Co10 200-250 (Carpinus betulus)","p":4200},{"n":"Граб Обыкновенный Co2-3 100-150 (Carpinus betulus)","p":1800},{"n":"Граб Обыкновенный Co5 150-200 (Carpinus betulus)","p":1500},{"n":"Ива Козья Пендула Co5 Pa ШТАМБ 120-140 (Salix caprea Pendula)","p":2000},{"n":"Ива цельнолистная Хакуро-нишики Co5Pa 120-140 (Salix integra Hakuro-nishiki)","p":2200},{"n":"Клен остролистный Кримсон Сентри Co20","p":12000},{"n":"Клён пальчатый Атропурпуреум Со2","p":2500},{"n":"Клён пальчатый Катсура Со2","p":1500,"oos":true},{"n":"Липа Мелколистная Co5 (Tilia cordata)","p":2700},{"n":"Липа Мелколистная Со 2-3","p":1000},{"n":"Лириодендрон Тюльпановый Co5 (Liriodendron tulipifera)","p":2300},{"n":"Лириодендрон Тюльпановый Со2-3","p":1900},{"n":"Магнолия Гэлакси Co5 (Magnolia Galaxy)","p":1800},{"n":"Магнолия Гэлакси Со2-3","p":1500}],"grass":[{"n":"Вейник остроцветковый Карл Форстер Co2","p":1300},{"n":"Императа цилиндрическая Ред Барон Со2","p":900},{"n":"Кортадерия пампасная трава карликовая Со2","p":900},{"n":"Кортадерия пампасная трава розовая Со2","p":900},{"n":"Лаванда узколистная Дварф Блю Со2","p":800,"oos":true},{"n":"Лаванда узколистная Манстед Со2","p":1300},{"n":"Лириопе мускари Биг Блю Со2","p":900},{"n":"Мискантус китайский Дроннинг Ингрид Co2","p":900},{"n":"Мискантус китайский Морнинг Лайт Co2","p":900},{"n":"Пеннисетум лисохвостный Литл Банни Co2","p":800},{"n":"Пеннисетум лисохвостный Моудри Co2","p":800},{"n":"Пеннисетум лисохвостный Мэджик Со2","p":800},{"n":"Пеннисетум лисохвостный Хамельн Со2","p":800},{"n":"Плющ Обыкновенный Со2 высота 60 см","p":700}]}
+;
+const CATEGORY_LABELS = {conifer:'Хвойные', shrub:'Кустарники', tree:'Деревья', grass:'Травы и почвопокровные'};
+
+let state = {
+  activeTab: 'conifer',
+  cart: {}, // key: category+'|'+name -> {n, p, qty, cat}
+  rates: { lawnReady:700, lawnPrep:1500, autopoliv:2100, stones:700, bark:800, work:null, phone:'996700000000' }
+};
+
+function initTabs(){
+  const wrap = document.getElementById('tabs');
+  wrap.innerHTML = '';
+  Object.keys(CATEGORY_LABELS).forEach(key=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (key===state.activeTab ? ' active':'');
+    b.textContent = CATEGORY_LABELS[key] + ' (' + CATALOG[key].length + ')';
+    b.onclick = ()=>{ state.activeTab = key; initTabs(); renderCatalog(); };
+    wrap.appendChild(b);
+  });
+}
+
+function renderCatalog(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const list = document.getElementById('plantList');
+  list.innerHTML = '';
+  const items = CATALOG[state.activeTab].filter(it => it.n.toLowerCase().includes(q));
+  if(items.length===0){ list.innerHTML = '<div class="empty">Ничего не найдено</div>'; return; }
+  items.forEach(it=>{
+    const row = document.createElement('div');
+    row.className = 'plant-row';
+    row.innerHTML = `<div class="plant-name">${it.n}${it.oos?'<span class="plant-oos">нет в наличии</span>':''}</div>
+      <div class="plant-price">${it.p.toLocaleString('ru-RU')} сом</div>
+      <button class="add-btn" title="Добавить">+</button>`;
+    row.querySelector('.add-btn').onclick = ()=> addToCart(it, state.activeTab);
+    list.appendChild(row);
+  });
+}
+
+function addToCart(item, cat){
+  const key = cat+'|'+item.n;
+  if(state.cart[key]) state.cart[key].qty += 1;
+  else state.cart[key] = {n:item.n, p:item.p, qty:1, cat};
+  renderCart();
+  renderSummary();
+}
+
+function changeQty(key, delta){
+  if(!state.cart[key]) return;
+  state.cart[key].qty += delta;
+  if(state.cart[key].qty <= 0) delete state.cart[key];
+  renderCart();
+  renderSummary();
+}
+
+function removeFromCart(key){
+  delete state.cart[key];
+  renderCart();
+  renderSummary();
+}
+
+function renderCart(){
+  const wrap = document.getElementById('cartList');
+  const keys = Object.keys(state.cart);
+  document.getElementById('cartCount').textContent = keys.reduce((s,k)=>s+state.cart[k].qty,0);
+  if(keys.length===0){ wrap.innerHTML = '<div class="empty">Пока ничего не выбрано</div>'; return; }
+  wrap.innerHTML = '';
+  keys.forEach(key=>{
+    const it = state.cart[key];
+    const row = document.createElement('div');
+    row.className = 'cart-item';
+    row.innerHTML = `<div class="nm">${it.n}<br><span style="color:var(--ink-muted); font-family:var(--font-mono); font-size:11px;">${it.p.toLocaleString('ru-RU')} сом × ${it.qty}</span></div>
+      <div class="qty-ctrl">
+        <button onclick="changeQty('${key.replace(/'/g,"\\'")}',-1)">−</button>
+        <span>${it.qty}</span>
+        <button onclick="changeQty('${key.replace(/'/g,"\\'")}',1)">+</button>
+      </div>
+      <button class="rm-btn" onclick="removeFromCart('${key.replace(/'/g,"\\'")}')">✕</button>`;
+    wrap.appendChild(row);
+  });
+}
+
+function onSiteAreaChange(){ renderSummary(); }
+
+function onLawnChange(){
+  document.querySelectorAll('.radio-opt').forEach(el=>el.classList.remove('checked'));
+  const val = document.querySelector('input[name=lawn]:checked').value;
+  if(val==='ready') document.getElementById('lawnOptReady').classList.add('checked');
+  if(val==='prep') document.getElementById('lawnOptPrep').classList.add('checked');
+  if(val==='none') document.getElementById('lawnOptNone').classList.add('checked');
+  renderSummary();
+}
+
+function computeTotals(){
+  const siteArea = parseFloat(document.getElementById('siteArea').value)||0;
+  const stonesArea = parseFloat(document.getElementById('stonesArea').value)||0;
+  const barkArea = parseFloat(document.getElementById('barkArea').value)||0;
+  const lawnVal = document.querySelector('input[name=lawn]:checked').value;
+  const autopoliv = document.getElementById('autopoliv').checked;
+  const worksChecked = document.getElementById('worksCheck').checked;
+
+  const plantsTotal = Object.values(state.cart).reduce((s,it)=>s+it.p*it.qty,0);
+
+  let lawnTotal = 0;
+  if(lawnVal==='ready') lawnTotal += siteArea * state.rates.lawnReady;
+  if(lawnVal==='prep') lawnTotal += siteArea * state.rates.lawnPrep;
+  if(autopoliv) lawnTotal += siteArea * state.rates.autopoliv;
+
+  const decorTotal = stonesArea*state.rates.stones + barkArea*state.rates.bark;
+
+  let worksTotal = 0, worksUnquoted = false;
+  if(worksChecked){
+    if(state.rates.work && state.rates.work > 0){ worksTotal = siteArea * state.rates.work; }
+    else { worksUnquoted = true; }
+  }
+
+  return { siteArea, stonesArea, barkArea, lawnVal, autopoliv, worksChecked, plantsTotal, lawnTotal, decorTotal, worksTotal, worksUnquoted,
+           total: plantsTotal+lawnTotal+decorTotal+worksTotal };
+}
+
+function renderSummary(){
+  const t = computeTotals();
+  const body = document.getElementById('summaryBody');
+  body.innerHTML = `
+    <div class="sec"><span>Растения</span><span class="val">${t.plantsTotal.toLocaleString('ru-RU')} сом</span></div>
+    <div class="sec"><span>Газон</span><span class="val">${t.lawnTotal.toLocaleString('ru-RU')} сом</span></div>
+    <div class="sec"><span>Декор</span><span class="val">${t.decorTotal.toLocaleString('ru-RU')} сом</span></div>
+    <div class="sec"><span>Работы</span><span class="val">${t.worksUnquoted ? 'уточняется' : t.worksTotal.toLocaleString('ru-RU')+' сом'}</span></div>
+  `;
+  document.getElementById('totalSum').textContent = t.total.toLocaleString('ru-RU') + ' сом';
+  document.getElementById('worksWarn').innerHTML = t.worksUnquoted ? '<div class="note-warn">Стоимость комплексных работ уточняет менеджер — ставка пока не задана. Эта позиция отмечена в заявке отдельно и не включена в итог.</div>' : '';
+  document.getElementById('worksHint').textContent = state.rates.work && state.rates.work>0
+    ? ('Ставка: ' + state.rates.work.toLocaleString('ru-RU') + ' сом/м²')
+    : 'Точная ставка за м² пока не определена — стоимость уточнит менеджер.';
+}
+
+function refreshRateLabels(){
+  document.querySelectorAll('.rate-lawnReady').forEach(e=>e.textContent = state.rates.lawnReady.toLocaleString('ru-RU'));
+  document.querySelectorAll('.rate-lawnPrep').forEach(e=>e.textContent = state.rates.lawnPrep.toLocaleString('ru-RU'));
+  document.querySelectorAll('.rate-autopoliv').forEach(e=>e.textContent = state.rates.autopoliv.toLocaleString('ru-RU'));
+  document.querySelectorAll('.rate-stones').forEach(e=>e.textContent = state.rates.stones.toLocaleString('ru-RU'));
+  document.querySelectorAll('.rate-bark').forEach(e=>e.textContent = state.rates.bark.toLocaleString('ru-RU'));
+}
+
+function onRatesChange(){
+  state.rates.lawnReady = parseFloat(document.getElementById('rate_lawnReady').value)||0;
+  state.rates.lawnPrep = parseFloat(document.getElementById('rate_lawnPrep').value)||0;
+  state.rates.autopoliv = parseFloat(document.getElementById('rate_autopoliv').value)||0;
+  state.rates.stones = parseFloat(document.getElementById('rate_stones').value)||0;
+  state.rates.bark = parseFloat(document.getElementById('rate_bark').value)||0;
+  const workVal = document.getElementById('rate_work').value;
+  state.rates.work = workVal ? parseFloat(workVal) : null;
+  state.rates.phone = document.getElementById('rate_phone').value.replace(/[^\d]/g,'');
+  refreshRateLabels();
+  renderSummary();
+}
+
+function submitRequest(){
+  const t = computeTotals();
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  if(!name || !phone){ alert('Пожалуйста, укажите имя и телефон.'); return; }
+
+  let msg = `Заявка с калькулятора озеленения — Питомник «Дебский»\n`;
+  msg += `Имя: ${name}\nТелефон: ${phone}\n`;
+  msg += `Площадь участка: ${t.siteArea} м²\n\n`;
+
+  const keys = Object.keys(state.cart);
+  if(keys.length){
+    msg += `Растения:\n`;
+    keys.forEach(k=>{ const it=state.cart[k]; msg += `— ${it.n} × ${it.qty} = ${(it.p*it.qty).toLocaleString('ru-RU')} сом\n`; });
+    msg += `\n`;
+  }
+
+  msg += `Смета:\n`;
+  msg += `Растения: ${t.plantsTotal.toLocaleString('ru-RU')} сом\n`;
+  msg += `Газон: ${t.lawnTotal.toLocaleString('ru-RU')} сом${t.autopoliv?' (с автополивом)':''}\n`;
+  msg += `Декор (камни ${t.stonesArea}м² + кора ${t.barkArea}м²): ${t.decorTotal.toLocaleString('ru-RU')} сом\n`;
+  msg += `Работы: ${t.worksUnquoted ? 'ТРЕБУЕТСЯ УТОЧНЕНИЕ У МЕНЕДЖЕРА' : t.worksTotal.toLocaleString('ru-RU')+' сом'}\n\n`;
+  msg += `ИТОГО: ${t.total.toLocaleString('ru-RU')} сом${t.worksUnquoted ? ' + стоимость работ (уточняется)' : ''}\n\n`;
+  msg += `Расчёт ориентировочный, точную стоимость подтверждает менеджер после осмотра участка.`;
+
+  const url = `https://wa.me/${state.rates.phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+// init
+document.getElementById('rate_lawnReady').value = state.rates.lawnReady;
+document.getElementById('rate_lawnPrep').value = state.rates.lawnPrep;
+document.getElementById('rate_autopoliv').value = state.rates.autopoliv;
+document.getElementById('rate_stones').value = state.rates.stones;
+document.getElementById('rate_bark').value = state.rates.bark;
+document.getElementById('rate_work').value = state.rates.work || '';
+document.getElementById('rate_phone').value = state.rates.phone;
+refreshRateLabels();
+initTabs();
+renderCatalog();
+renderCart();
+renderSummary();
+</script>
+
+</body>
+</html>

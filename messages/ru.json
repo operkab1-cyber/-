@@ -1,0 +1,9 @@
+{
+  "common": {
+    "catalog": "Каталог",
+    "addToCart": "В корзину",
+    "inStock": "В наличии",
+    "outOfStock": "Нет в наличии",
+    "priceFrom": "от"
+  }
+}
