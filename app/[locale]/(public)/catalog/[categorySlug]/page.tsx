@@ -4,6 +4,8 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFiltersPanel } from "@/components/catalog/CatalogFiltersPanel";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildCollectionPageJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo/jsonLd";
 
 export const revalidate = 120; // ISR: см. Tamga_Green_System_Architecture.md, раздел 3
 
@@ -16,11 +18,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, categorySlug } = await params;
   const category = await resolveCategoryBySlug(categorySlug, locale);
   const name = category?.name ?? categorySlug;
-  const title = `${name} — купить у проверенных питомников | Tamga Green`;
+  // Суффикс "| Tamga Green" не дублируется здесь — его добавляет template в
+  // корневом layout.tsx (title: { template: "%s | Tamga Green" }).
+  const title = `${name} — купить у проверенных питомников`;
   return {
     title,
     description: `Каталог категории «${name}»: сравните цену и наличие у верифицированных поставщиков.`,
-    alternates: { canonical: `/catalog/${categorySlug}` },
+    alternates: {
+      canonical: `/${locale}/catalog/${categorySlug}`,
+      languages: { en: `/en/catalog/${categorySlug}`, ru: `/ru/catalog/${categorySlug}`, "x-default": `/en/catalog/${categorySlug}` },
+    },
   };
 }
 
@@ -40,8 +47,15 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   const plants = await getPlantsByCategory(categorySlug, locale, filters);
 
+  const breadcrumbItems = [
+    { name: "Каталог", url: `/${locale}/catalog` },
+    ...category.breadcrumbs.map((b) => ({ name: b.name, url: `/${locale}/catalog/${b.slug}` })),
+  ];
+
   return (
     <main className="mx-auto max-w-[1280px] px-5 py-8">
+      <JsonLd data={buildCollectionPageJsonLd({ name: category.name, url: `/${locale}/catalog/${categorySlug}`, itemNames: plants.map((p) => p.name) })} />
+      <JsonLd data={buildBreadcrumbJsonLd(breadcrumbItems)} />
       <nav className="mb-4 font-mono text-xs text-ink-muted">
         <Link href={`/${locale}/catalog`}>Каталог</Link>
         {category.breadcrumbs.map((b) => (

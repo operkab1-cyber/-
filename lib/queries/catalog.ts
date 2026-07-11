@@ -353,6 +353,13 @@ export async function getPlantDetailsByIds(ids: string[], locale: string = "ru")
   return details.filter((d): d is PlantDetail => d !== null);
 }
 
+// Публичный профиль поставщика (SEO Strategy §1.2) — карточки его активного каталога.
+export async function getPlantsByCompany(companyId: string, locale: string = "ru"): Promise<CatalogPlant[]> {
+  const supabase = await createClient();
+  const { data: plants } = await supabase.from("plants").select("id").eq("company_id", companyId).eq("status", "active");
+  return getPlantsByIds((plants ?? []).map((p) => p.id), locale);
+}
+
 export async function getPlantsByIds(ids: string[], locale: string = "ru"): Promise<CatalogPlant[]> {
   if (ids.length === 0) return [];
   const supabase = await createClient();

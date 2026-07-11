@@ -8,6 +8,8 @@ import { CompareToggle } from "@/components/catalog/CompareToggle";
 import { AddToCartForm } from "@/components/catalog/AddToCartForm";
 import { ATTRIBUTE_LABELS, formatAttributeValue } from "@/lib/attributeLabels";
 import Link from "next/link";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildProductJsonLd, buildBreadcrumbJsonLd } from "@/lib/seo/jsonLd";
 
 export const revalidate = 120; // ISR — System Architecture §3
 
@@ -20,13 +22,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const plant = await getPlantBySlug(productSlug, locale);
   if (!plant) return {};
   const cheapestTier = plant.priceTiers[0];
+  // Суффикс "| Tamga Green" добавляет template в корневом layout.tsx, не дублируем здесь.
   const title = cheapestTier
-    ? `${plant.name} — купить от ${cheapestTier.price} ${cheapestTier.currency} | Tamga Green`
-    : `${plant.name} | Tamga Green`;
+    ? `${plant.name} — купить от ${cheapestTier.price} ${cheapestTier.currency}`
+    : plant.name;
+  const path = `/catalog/${plant.category?.slug ?? ""}/${plant.slug}`;
   return {
     title,
     description: plant.description ?? plant.name,
-    alternates: { canonical: `/catalog/${plant.category?.slug ?? ""}/${plant.slug}` },
+    alternates: {
+      canonical: `/${locale}${path}`,
+      languages: { en: `/en${path}`, ru: `/ru${path}`, "x-default": `/en${path}` },
+    },
   };
 }
 
@@ -43,8 +50,29 @@ export default async function ProductPage({ params }: Props) {
   const ALL_ATTRIBUTE_CODES = ["hardiness_zone", "light", "height_range", "foliage_type", "container_volume", "crown_form"];
   const valueByCode = new Map(plant.attributes.map((a) => [a.code, a]));
 
+  const productPath = `/${locale}/catalog/${categorySlug}/${plant.slug}`;
+  const breadcrumbItems = [
+    { name: "Каталог", url: `/${locale}/catalog` },
+    ...(plant.category?.parentSlug ? [{ name: plant.category.parentSlug, url: `/${locale}/catalog/${plant.category.parentSlug}` }] : []),
+    ...(plant.category ? [{ name: plant.category.name, url: `/${locale}/catalog/${plant.category.slug}` }] : []),
+    { name: plant.name, url: productPath },
+  ];
+
   return (
     <main className="mx-auto max-w-[1280px] px-5 py-8">
+      <JsonLd
+        data={buildProductJsonLd({
+          name: plant.name,
+          description: plant.description,
+          images: plant.images.map((i) => i.filePath),
+          priceFrom: plant.priceTiers[0]?.price ?? null,
+          currency: plant.priceTiers[0]?.currency ?? "KGS",
+          inStock,
+          url: productPath,
+          supplierName: plant.company?.name ?? null,
+        })}
+      />
+      <JsonLd data={buildBreadcrumbJsonLd(breadcrumbItems)} />
       <nav className="mb-4 font-mono text-xs text-ink-muted">
         <Link href={`/${locale}/catalog`}>Каталог</Link>
         {plant.category?.parentSlug && (
@@ -66,7 +94,9 @@ export default async function ProductPage({ params }: Props) {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-gradient-to-br from-sprout to-sap">
           {cover && (
-            <Image src={cover.filePath} alt={plant.name} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+            // SEO Strategy §7.2 — главное фото товара грузится с priority, без lazy
+            // loading: устраняет и медленный LCP, и CLS одновременно.
+            <Image src={cover.filePath} alt={plant.name} fill priority className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
           )}
         </div>
 
