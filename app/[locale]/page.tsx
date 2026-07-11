@@ -63,6 +63,7 @@ export default async function HomePage({
           <span className="font-display text-xl font-semibold text-canopy">Tamga Green</span>
           <nav className="flex items-center gap-4 font-body text-[13.5px] text-ink">
             <Link href={`/${locale}/catalog`}>Каталог</Link>
+            <Link href={`/${locale}/calculator`}>Калькулятор</Link>
             <Link href={`/${locale}/login`}>Войти</Link>
             <Link href={`/${locale}/register`} className="rounded-md bg-sap px-4 py-2 font-semibold text-white hover:bg-sap-hover">
               Регистрация
