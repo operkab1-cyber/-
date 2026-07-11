@@ -4,8 +4,7 @@ import { getCurrentAccount } from "@/lib/queries/account";
 import { Badge } from "@/components/ui/Badge";
 
 // UX Bible §5.1 — дашборд поставщика. Полноценные виджеты (график продаж,
-// топ-товары, счётчик "требует внимания AI") — Phase 5 (CMS). Здесь — быстрый
-// доступ к тому, что уже работает (заказы).
+// топ-товары на этой самой странице) — Phase 5 CMS/Analytics.
 export default async function SupplierDashboardPage({
   params,
 }: {
@@ -25,14 +24,17 @@ export default async function SupplierDashboardPage({
         </h1>
         <Badge tone="sprout">Верифицирован</Badge>
       </div>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
+        <Link href={`/${locale}/supplier/products`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
+          Каталог
+        </Link>
         <Link href={`/${locale}/supplier/orders`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
           Заказы
         </Link>
+        <Link href={`/${locale}/supplier/analytics`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
+          Аналитика
+        </Link>
       </div>
-      <p className="mt-4 font-body text-[14px] text-ink-muted">
-        Управление каталогом (добавление/цены/остатки/импорт) и аналитика — Phase 5.
-      </p>
     </main>
   );
 }

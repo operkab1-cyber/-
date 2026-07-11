@@ -96,14 +96,26 @@ function extractLatinName(name) {
   return /^[A-Za-z][A-Za-z .'\-]*$/.test(candidate) ? candidate : null;
 }
 
+// [решено самостоятельно, найдено тестированием импорта в Phase 5 — см. TODO.md]
+// "Снять хвостовые скобки с латынью" раньше делалось по regex "скобки начинаются
+// с латинской буквы" — но "(Co 10)"/"(Co 5)" тоже начинаются с латинской буквы и
+// латынью не являются, из-за чего они срезались целиком до парсера объёма
+// контейнера (4 позиции туи "Тини Тим"/"Хозери" оставались без containerVolume).
+// Портировано сюда из lib/ai/parsePlantName.ts (runtime-версия для CMS-импорта,
+// исправлена первой) — см. комментарий в шапке файла про синхронизацию вручную.
+function stripTrailingLatinParens(rawName) {
+  return extractLatinName(rawName) ? rawName.replace(/\([A-Za-z][^)]*\)\s*$/, "") : rawName;
+}
+
 // Человекочитаемое название без служебных токенов прайса (Co5, ШТАМБ, диапазон
 // высоты, латынь в скобках) — для описаний и заголовков карточки. [решено
 // самостоятельно, найдено при ручной проверке 20 позиций — см. TODO.md]: без этой
 // очистки generateDescription() дублировал сырую строку и латынь в одном предложении
 // ("...Co5 (Picea pungens...) (лат. Picea pungens...)"), что не годится для публикации.
 function cleanDisplayName(rawName) {
-  let s = rawName.replace(/\([A-Za-z][^)]*\)\s*$/, "");
+  let s = stripTrailingLatinParens(rawName);
   s = s.replace(/\(\s*\d+\s*л\s*\)/gi, "");
+  s = s.replace(/\(\s*[cсCС][oоOО]\s*\d+(?:\s*[-–]\s*\d+)?\s*\)/gi, "");
   s = s.replace(/[cсCС][oоOО]\s*\d+(?:\s*[-–]\s*\d+)?(?:\s*,\s*\d+)?/gi, "");
   s = s.replace(/\bPa\b/g, "");
   s = s.replace(/ШТАМБ/gi, "");
@@ -118,7 +130,7 @@ function cleanDisplayName(rawName) {
 // (AI Architecture §6, пункт 1). Возвращает только то, что распознано однозначно;
 // ничего не придумывает для пустых полей (§13.4).
 function parseAttributes(rawName) {
-  const withoutLatin = rawName.replace(/\([A-Za-z][^)]*\)\s*$/, "");
+  const withoutLatin = stripTrailingLatinParens(rawName);
 
   const containerMatch = withoutLatin.match(/[cсCС][oоOО]\s*(\d+(?:\s*[-–]\s*\d+)?)/);
   const literMatch = rawName.match(/\((\d+)\s*л\)/);

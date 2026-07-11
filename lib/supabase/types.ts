@@ -422,6 +422,50 @@ export interface Database {
           },
         ];
       };
+      audit_log: {
+        Row: {
+          id: string;
+          actor_id: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          before: Record<string, unknown> | null;
+          after: Record<string, unknown> | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["audit_log"]["Row"]> & {
+          action: string;
+          entity_type: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["audit_log"]["Row"]>;
+        Relationships: [];
+      };
+      price_change_log: {
+        Row: {
+          id: string;
+          audit_log_id: string | null;
+          plant_id: string;
+          previous_price: number;
+          previous_min_qty: number;
+          previous_currency: string;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["price_change_log"]["Row"]> & {
+          plant_id: string;
+          previous_price: number;
+          previous_min_qty: number;
+          previous_currency: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["price_change_log"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "price_change_log_plant_id_fkey";
+            columns: ["plant_id"];
+            referencedRelation: "plants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
