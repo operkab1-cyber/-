@@ -1,17 +1,20 @@
-import { getPlantsByCategory, getCategories } from "@/lib/queries/catalog";
+import Link from "next/link";
+import { getPlantsByCategory, resolveCategoryBySlug, type CatalogFilters } from "@/lib/queries/catalog";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { CatalogFiltersPanel } from "@/components/catalog/CatalogFiltersPanel";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 export const revalidate = 120; // ISR: см. Tamga_Green_System_Architecture.md, раздел 3
 
 interface Props {
   params: Promise<{ locale: string; categorySlug: string }>;
+  searchParams: Promise<{ instock?: string; crown_form?: string; min_price?: string; max_price?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, categorySlug } = await params;
-  const categories = await getCategories(locale);
-  const category = categories.find((c) => c.slug === categorySlug);
+  const category = await resolveCategoryBySlug(categorySlug, locale);
   const name = category?.name ?? categorySlug;
   const title = `${name} — купить у проверенных питомников | Tamga Green`;
   return {
@@ -21,35 +24,74 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CategoryPage({ params }: Props) {
+export default async function CategoryPage({ params, searchParams }: Props) {
   const { locale, categorySlug } = await params;
-  const [plants, categories] = await Promise.all([
-    getPlantsByCategory(categorySlug, locale),
-    getCategories(locale),
-  ]);
-  const category = categories.find((c) => c.slug === categorySlug);
-  const categoryName = category?.name ?? categorySlug;
+  const sp = await searchParams;
+
+  const category = await resolveCategoryBySlug(categorySlug, locale);
+  if (!category) notFound();
+
+  const filters: CatalogFilters = {
+    inStockOnly: sp.instock === "1",
+    crownForm: sp.crown_form,
+    minPrice: sp.min_price ? Number(sp.min_price) : undefined,
+    maxPrice: sp.max_price ? Number(sp.max_price) : undefined,
+  };
+
+  const plants = await getPlantsByCategory(categorySlug, locale, filters);
 
   return (
     <main className="mx-auto max-w-[1280px] px-5 py-8">
       <nav className="mb-4 font-mono text-xs text-ink-muted">
-        <a href={`/${locale}/catalog`}>Каталог</a> / {categoryName}
+        <Link href={`/${locale}/catalog`}>Каталог</Link>
+        {category.breadcrumbs.map((b) => (
+          <span key={b.id}>
+            {" / "}
+            <Link href={`/${locale}/catalog/${b.slug}`}>{b.name}</Link>
+          </span>
+        ))}
       </nav>
-      <h1 className="mb-6 font-display text-3xl font-semibold text-canopy">
-        {categoryName} <span className="font-mono text-base text-ink-muted">({plants.length})</span>
+
+      <h1 className="mb-2 font-display text-3xl font-semibold text-canopy">
+        {category.name} <span className="font-mono text-base text-ink-muted">({plants.length})</span>
       </h1>
 
-      {plants.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border bg-white p-10 text-center text-ink-muted">
-          В этой категории пока нет опубликованных товаров.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {plants.map((plant) => (
-            <ProductCard key={plant.id} plant={plant} categorySlug={categorySlug} locale={locale} />
+      {category.children.length > 0 && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {category.children.map((c) => (
+            <Link
+              key={c.id}
+              href={`/${locale}/catalog/${c.slug}`}
+              className="rounded-full border border-border bg-white px-3.5 py-1.5 font-body text-[13px] text-ink hover:border-sap hover:text-sap"
+            >
+              {c.name}
+            </Link>
           ))}
         </div>
       )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
+        <CatalogFiltersPanel current={sp} />
+
+        <div>
+          {plants.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border bg-white p-10 text-center text-ink-muted">
+              По вашему запросу ничего не найдено.
+              <div className="mt-3">
+                <Link href={`/${locale}/catalog/${categorySlug}`} className="underline">
+                  Сбросить фильтры
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {plants.map((plant) => (
+                <ProductCard key={plant.id} plant={plant} categorySlug={categorySlug} locale={locale} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

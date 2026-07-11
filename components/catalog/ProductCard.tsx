@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/Badge";
+import { CompareToggle } from "@/components/catalog/CompareToggle";
 import type { CatalogPlant } from "@/lib/queries/catalog";
 
 export function ProductCard({
@@ -9,12 +10,13 @@ export function ProductCard({
   locale,
 }: {
   plant: CatalogPlant;
-  categorySlug: string;
+  categorySlug?: string;
   locale: string;
 }) {
+  const resolvedCategorySlug = plant.categorySlug ?? categorySlug ?? "";
   return (
     <Link
-      href={`/${locale}/catalog/${categorySlug}/${plant.slug}`}
+      href={`/${locale}/catalog/${resolvedCategorySlug}/${plant.slug}`}
       className="group block overflow-hidden rounded-lg border border-border bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="relative h-40 bg-gradient-to-br from-sprout to-sap">
@@ -27,6 +29,9 @@ export function ProductCard({
             sizes="(max-width: 768px) 100vw, 25vw"
           />
         )}
+        <div className="absolute right-2 top-2 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+          <CompareToggle compact plant={{ id: plant.id, slug: plant.slug, name: plant.name, categorySlug: resolvedCategorySlug }} />
+        </div>
       </div>
       <div className="relative border-t border-dashed border-border px-4 py-4 pl-6">
         <span

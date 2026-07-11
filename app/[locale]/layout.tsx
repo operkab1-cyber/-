@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
+import { CompareBar } from "@/components/catalog/CompareBar";
 import "../globals.css";
 
 // [решено самостоятельно] Google Fonts не поставляет кириллицу для Fraunces (только
@@ -29,7 +30,10 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={`${fraunces.variable} ${inter.variable} ${plexMono.variable}`}>
       <body className="font-body">
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          <CompareBar locale={locale} />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

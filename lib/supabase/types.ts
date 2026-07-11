@@ -223,9 +223,100 @@ export interface Database {
           },
         ];
       };
+      attributes: {
+        Row: {
+          id: string;
+          category_id: string | null;
+          code: string;
+          data_type: "text" | "number" | "boolean" | "enum";
+          unit: string | null;
+          enum_options: string[] | null;
+          is_filterable: boolean;
+          sort_order: number;
+        };
+        Insert: Partial<Database["public"]["Tables"]["attributes"]["Row"]> & {
+          code: string;
+          data_type: Database["public"]["Tables"]["attributes"]["Row"]["data_type"];
+        };
+        Update: Partial<Database["public"]["Tables"]["attributes"]["Row"]>;
+        Relationships: [];
+      };
+      plant_attribute_values: {
+        Row: {
+          id: string;
+          plant_id: string;
+          attribute_id: string;
+          value_text: string | null;
+          value_number: number | null;
+          value_boolean: boolean | null;
+        };
+        Insert: Partial<Database["public"]["Tables"]["plant_attribute_values"]["Row"]> & {
+          plant_id: string;
+          attribute_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["plant_attribute_values"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "plant_attribute_values_plant_id_fkey";
+            columns: ["plant_id"];
+            referencedRelation: "plants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "plant_attribute_values_attribute_id_fkey";
+            columns: ["attribute_id"];
+            referencedRelation: "attributes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      plant_compatibility: {
+        Row: {
+          id: string;
+          plant_id_a: string;
+          plant_id_b: string;
+          relation: "companion" | "incompatible";
+          reason: string | null;
+          source: "expert" | "ai_suggested";
+        };
+        Insert: Partial<Database["public"]["Tables"]["plant_compatibility"]["Row"]> & {
+          plant_id_a: string;
+          plant_id_b: string;
+          relation: Database["public"]["Tables"]["plant_compatibility"]["Row"]["relation"];
+        };
+        Update: Partial<Database["public"]["Tables"]["plant_compatibility"]["Row"]>;
+        Relationships: [];
+      };
+      requests: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          type: "quote" | "contact" | "project_consultation" | "plant_availability_alert";
+          subject_type: "plant" | "landscape_solution" | "project" | null;
+          subject_id: string | null;
+          name: string | null;
+          email: string | null;
+          phone: string | null;
+          message: string | null;
+          status: "new" | "in_progress" | "closed";
+          assigned_to: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["requests"]["Row"]> & {
+          type: Database["public"]["Tables"]["requests"]["Row"]["type"];
+        };
+        Update: Partial<Database["public"]["Tables"]["requests"]["Row"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      search_plants_fuzzy: {
+        Args: { query_text: string };
+        Returns: { plant_id: string; score: number }[];
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
