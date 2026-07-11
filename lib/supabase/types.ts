@@ -140,6 +140,89 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["translations"]["Row"]>;
         Relationships: [];
       };
+      companies: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          type: "nursery" | "wholesaler" | "garden_center" | "landscaper" | "other";
+          country: string;
+          vat_number: string | null;
+          address: string | null;
+          description: string | null;
+          logo_url: string | null;
+          verification_status: "pending" | "approved" | "rejected";
+          rating_avg: number;
+          rating_count: number;
+          monthly_purchase_volume: string | null;
+          credit_limit: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["companies"]["Row"]> & {
+          name: string;
+          slug: string;
+          type: Database["public"]["Tables"]["companies"]["Row"]["type"];
+          country: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["companies"]["Row"]>;
+        Relationships: [];
+      };
+      users: {
+        Row: {
+          id: string;
+          company_id: string | null;
+          role: "supplier" | "buyer" | "admin" | "consumer";
+          full_name: string;
+          email: string;
+          phone: string | null;
+          locale: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["users"]["Row"]> & {
+          id: string;
+          role: Database["public"]["Tables"]["users"]["Row"]["role"];
+          full_name: string;
+          email: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["users"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "users_company_id_fkey";
+            columns: ["company_id"];
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      verification_documents: {
+        Row: {
+          id: string;
+          company_id: string;
+          doc_type: string;
+          file_path: string;
+          status: "pending" | "approved" | "rejected";
+          rejection_reason: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["verification_documents"]["Row"]> & {
+          company_id: string;
+          doc_type: string;
+          file_path: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["verification_documents"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "verification_documents_company_id_fkey";
+            columns: ["company_id"];
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
