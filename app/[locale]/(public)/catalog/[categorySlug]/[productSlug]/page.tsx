@@ -5,6 +5,7 @@ import { getPlantBySlug, getCompatiblePlants } from "@/lib/queries/catalog";
 import { Badge } from "@/components/ui/Badge";
 import { RequestForm } from "@/components/catalog/RequestForm";
 import { CompareToggle } from "@/components/catalog/CompareToggle";
+import { AddToCartForm } from "@/components/catalog/AddToCartForm";
 import { ATTRIBUTE_LABELS, formatAttributeValue } from "@/lib/attributeLabels";
 import Link from "next/link";
 
@@ -109,14 +110,19 @@ export default async function ProductPage({ params }: Props) {
 
           <div className="mt-4 flex flex-col gap-3">
             <div className="flex gap-2">
-              <button
-                type="button"
-                disabled
-                title="Корзина и заказ появятся в Phase 4"
-                className="flex-1 cursor-not-allowed rounded-md bg-paper-deep px-5 py-3 font-body text-sm font-semibold text-ink-muted"
-              >
-                В корзину (скоро)
-              </button>
+              {inStock ? (
+                <div className="flex-1">
+                  <AddToCartForm plantId={plant.id} locale={locale} minOrderQty={plant.minOrderQty} />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="flex-1 cursor-not-allowed rounded-md bg-paper-deep px-5 py-3 font-body text-sm font-semibold text-ink-muted"
+                >
+                  Нет в наличии
+                </button>
+              )}
               <CompareToggle plant={{ id: plant.id, slug: plant.slug, name: plant.name, categorySlug: plant.category?.slug ?? categorySlug }} />
             </div>
 

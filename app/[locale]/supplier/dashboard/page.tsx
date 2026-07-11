@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentAccount } from "@/lib/queries/account";
 import { Badge } from "@/components/ui/Badge";
 
-// Заглушка дашборда поставщика (UX Bible §5.1) — полноценные виджеты (новые заказы,
-// график продаж, топ-товары) появятся вместе с Phase 4/5. Здесь — доказательство,
-// что онбординг доводит до защищённого кабинета своей роли.
+// UX Bible §5.1 — дашборд поставщика. Полноценные виджеты (график продаж,
+// топ-товары, счётчик "требует внимания AI") — Phase 5 (CMS). Здесь — быстрый
+// доступ к тому, что уже работает (заказы).
 export default async function SupplierDashboardPage({
   params,
 }: {
@@ -24,8 +25,13 @@ export default async function SupplierDashboardPage({
         </h1>
         <Badge tone="sprout">Верифицирован</Badge>
       </div>
-      <p className="font-body text-[14px] text-ink-muted">
-        Управление каталогом, заказами и аналитикой — Phase 4/5.
+      <div className="flex gap-3">
+        <Link href={`/${locale}/supplier/orders`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
+          Заказы
+        </Link>
+      </div>
+      <p className="mt-4 font-body text-[14px] text-ink-muted">
+        Управление каталогом (добавление/цены/остатки/импорт) и аналитика — Phase 5.
       </p>
     </main>
   );

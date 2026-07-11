@@ -245,6 +245,7 @@ export interface PlantDetail {
   priceTiers: { minQty: number; price: number; currency: string }[];
   totalStock: number;
   stockUpdatedAt: string | null;
+  minOrderQty: number;
   attributes: { code: string; unit: string | null; value: string }[];
   category: { slug: string; name: string; parentSlug: string | null } | null;
   company: { id: string; name: string; slug: string; country: string; ratingAvg: number } | null;
@@ -255,7 +256,7 @@ export async function getPlantBySlug(slug: string, locale: string = "ru"): Promi
   const { data: plant } = await supabase
     .from("plants")
     .select(
-      `id, slug, latin_name, category_id, company_id,
+      `id, slug, latin_name, category_id, company_id, min_order_qty,
        plant_images ( file_path, is_cover ),
        prices ( min_qty, price, currency ),
        availability ( quantity, updated_at )`
@@ -310,6 +311,7 @@ export async function getPlantBySlug(slug: string, locale: string = "ru"): Promi
     id: plant.id,
     slug: plant.slug,
     latinName: plant.latin_name,
+    minOrderQty: plant.min_order_qty ?? 1,
     name: nameMap.get(plant.id) ?? plant.slug,
     description: descriptionMap.get(plant.id) ?? null,
     images: (plant.plant_images ?? []).map((i) => ({ filePath: i.file_path, isCover: i.is_cover ?? false })),

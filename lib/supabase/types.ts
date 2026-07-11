@@ -309,6 +309,119 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["requests"]["Row"]>;
         Relationships: [];
       };
+      carts: {
+        Row: {
+          id: string;
+          buyer_company_id: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["carts"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["carts"]["Row"]>;
+        Relationships: [];
+      };
+      cart_items: {
+        Row: {
+          id: string;
+          cart_id: string;
+          plant_id: string | null;
+          qty: number;
+          price_snapshot: number;
+        };
+        Insert: Partial<Database["public"]["Tables"]["cart_items"]["Row"]> & {
+          cart_id: string;
+          qty: number;
+          price_snapshot: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["cart_items"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_cart_id_fkey";
+            columns: ["cart_id"];
+            referencedRelation: "carts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "cart_items_plant_id_fkey";
+            columns: ["plant_id"];
+            referencedRelation: "plants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      orders: {
+        Row: {
+          id: string;
+          order_number: string;
+          buyer_company_id: string | null;
+          supplier_company_id: string | null;
+          status: "new" | "confirmed" | "packed" | "shipped" | "delivered" | "completed" | "disputed" | "cancelled";
+          subtotal: number;
+          shipping_cost: number;
+          total: number;
+          currency: string;
+          shipping_address: Record<string, unknown>;
+          payment_method: string | null;
+          confirm_deadline: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["orders"]["Row"]> & {
+          order_number: string;
+          subtotal: number;
+          total: number;
+          shipping_address: Record<string, unknown>;
+        };
+        Update: Partial<Database["public"]["Tables"]["orders"]["Row"]>;
+        Relationships: [];
+      };
+      order_items: {
+        Row: {
+          id: string;
+          order_id: string;
+          plant_id: string | null;
+          product_name_snapshot: Record<string, unknown>;
+          qty: number;
+          unit_price: number;
+        };
+        Insert: Partial<Database["public"]["Tables"]["order_items"]["Row"]> & {
+          order_id: string;
+          product_name_snapshot: Record<string, unknown>;
+          qty: number;
+          unit_price: number;
+        };
+        Update: Partial<Database["public"]["Tables"]["order_items"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey";
+            columns: ["order_id"];
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      order_status_history: {
+        Row: {
+          id: string;
+          order_id: string;
+          status: "new" | "confirmed" | "packed" | "shipped" | "delivered" | "completed" | "disputed" | "cancelled";
+          changed_by: string | null;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["order_status_history"]["Row"]> & {
+          order_id: string;
+          status: Database["public"]["Tables"]["order_status_history"]["Row"]["status"];
+        };
+        Update: Partial<Database["public"]["Tables"]["order_status_history"]["Row"]>;
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey";
+            columns: ["order_id"];
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentAccount } from "@/lib/queries/account";
 import { Badge } from "@/components/ui/Badge";
 
-// Заглушка дашборда покупателя (UX Bible §6.1) — активные заказы, рекомендации,
-// избранные поставщики появятся вместе с Phase 3/4.
+// UX Bible §6.1 — дашборд покупателя. Полные виджеты (рекомендации, избранные
+// поставщики с индикатором новинок) — backlog; здесь быстрый доступ к тому, что
+// уже реально работает (каталог, корзина, заказы).
 export default async function BuyerDashboardPage({
   params,
 }: {
@@ -23,8 +25,19 @@ export default async function BuyerDashboardPage({
         </h1>
         <Badge tone="sprout">Верифицирован</Badge>
       </div>
-      <p className="font-body text-[14px] text-ink-muted">
-        Заказы, избранное и калькуляторы — Phase 3/4.
+      <div className="flex gap-3">
+        <Link href={`/${locale}/catalog`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
+          Каталог
+        </Link>
+        <Link href={`/${locale}/buyer/cart`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
+          Корзина
+        </Link>
+        <Link href={`/${locale}/buyer/orders`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
+          Заказы
+        </Link>
+      </div>
+      <p className="mt-4 font-body text-[14px] text-ink-muted">
+        Рекомендации, избранные поставщики — backlog.
       </p>
     </main>
   );
