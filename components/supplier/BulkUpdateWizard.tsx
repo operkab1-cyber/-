@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { previewBulkUpdate, applyBulkUpdate, type BulkField, type BulkOp, type BulkPreviewRow } from "@/lib/actions/bulkUpdate";
+import {
+  previewBulkUpdate,
+  applyBulkUpdate,
+  rollbackBulkPriceUpdate,
+  type BulkField,
+  type BulkOp,
+  type BulkPreviewRow,
+  type RecentBulkPriceUpdate,
+} from "@/lib/actions/bulkUpdate";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { TextField } from "@/components/ui/TextField";
@@ -9,7 +17,15 @@ import type { CatalogCategory } from "@/lib/queries/catalog";
 
 // Admin Panel §4.2/§5.4 — предпросмотр "до/после" по первым 10 позициям перед
 // применением ко всем.
-export function BulkUpdateWizard({ locale, categories }: { locale: string; categories: CatalogCategory[] }) {
+export function BulkUpdateWizard({
+  locale,
+  categories,
+  recentRollbacks,
+}: {
+  locale: string;
+  categories: CatalogCategory[];
+  recentRollbacks: RecentBulkPriceUpdate[];
+}) {
   const [field, setField] = useState<BulkField>("price");
   const [op, setOp] = useState<BulkOp>("percent");
   const [amount, setAmount] = useState(5);
@@ -18,6 +34,24 @@ export function BulkUpdateWizard({ locale, categories }: { locale: string; categ
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [rollbacks, setRollbacks] = useState(recentRollbacks);
+  const [rollbackPending, setRollbackPending] = useState<string | null>(null);
+  const [rollbackError, setRollbackError] = useState<string | null>(null);
+  const [rollbackDone, setRollbackDone] = useState<string | null>(null);
+
+  async function handleRollback(auditLogId: string) {
+    setRollbackPending(auditLogId);
+    setRollbackError(null);
+    const res = await rollbackBulkPriceUpdate(auditLogId, locale);
+    setRollbackPending(null);
+    if (res.error) {
+      setRollbackError(res.error);
+      return;
+    }
+    setRollbacks((prev) => prev.filter((r) => r.auditLogId !== auditLogId));
+    setRollbackDone(`Откачено ${res.reverted} товаров.`);
+  }
 
   async function handlePreview() {
     setPending(true);
@@ -45,7 +79,39 @@ export function BulkUpdateWizard({ locale, categories }: { locale: string; categ
   }
 
   return (
-    <div className="rounded-lg border border-border bg-white p-6">
+    <div className="flex flex-col gap-5">
+      {(rollbacks.length > 0 || rollbackDone) && (
+        <div className="rounded-lg border border-border bg-white p-5">
+          <p className="mb-3 font-body text-[13px] font-semibold text-ink">
+            Недавние массовые изменения цен <span className="font-normal text-ink-muted">(откат доступен 24 часа)</span>
+          </p>
+          {rollbackDone && <p className="mb-2 font-body text-[13px] text-sap">{rollbackDone}</p>}
+          {rollbackError && <p className="mb-2 font-body text-[13px] text-error">{rollbackError}</p>}
+          {rollbacks.length === 0 ? (
+            <p className="font-body text-[12.5px] text-ink-muted">Больше нет изменений, доступных для отката.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {rollbacks.map((r) => (
+                <li key={r.auditLogId} className="flex items-center justify-between gap-3 border-t border-dashed border-border pt-2 first:border-none first:pt-0">
+                  <span className="font-body text-[13px] text-ink">
+                    {new Date(r.createdAt).toLocaleString("ru-RU")} — изменено {r.affected}{" "}
+                    {r.affected === 1 ? "товар" : "товаров"}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    loading={rollbackPending === r.auditLogId}
+                    onClick={() => handleRollback(r.auditLogId)}
+                  >
+                    Откатить
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <div className="rounded-lg border border-border bg-white p-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Select label="Поле" value={field} onChange={(e) => setField(e.target.value as BulkField)}>
           <option value="price">Цены</option>
@@ -110,6 +176,7 @@ export function BulkUpdateWizard({ locale, categories }: { locale: string; categ
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -2,8 +2,12 @@
 
 // Admin Panel §4.2/§5.4 — массовое изменение цен/остатков с предпросмотром
 // "до/после" перед применением, логирование в audit_log + price_change_log
-// (для отката цен в течение 24ч — восстановление реализовано, таймер отката
-// как отдельная UI-функция — backlog, см. TODO.md).
+// (для отката цен в течение 24ч — см. getRecentPriceRollbacks/rollbackBulkPriceUpdate
+// ниже). Спецификация описывает откат только для цен ("восстановление
+// price_change_log хранит предыдущие значения prices"), для остатков
+// аналогичного лог-механизма в схеме нет — откат массовых изменений остатков
+// технически невозможен без придумывания новой таблицы (rule 2), поэтому не
+// реализован и здесь не показывается как опция.
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -121,4 +125,113 @@ export async function applyBulkUpdate(field: BulkField, op: BulkOp, amount: numb
 
   revalidatePath(`/${locale}/supplier/products`);
   return { affected: rows.length };
+}
+
+// ==== Откат массового изменения цен (Admin Panel §4.2 — "одним кликом в
+// течение 24 часов") ====
+
+const ROLLBACK_WINDOW_HOURS = 24;
+
+export interface RecentBulkPriceUpdate {
+  auditLogId: string;
+  createdAt: string;
+  affected: number;
+}
+
+// RLS ("self_read_audit_log") ограничивает видимость записей actor_id = auth.uid() —
+// это значит, что откат виден только тому же аккаунту, что делал изменение,
+// а не всей компании (коллега не увидит чужой bulk-update в списке). Это
+// унаследованное ограничение схемы аудита из Phase 2/4, не переделываю его
+// здесь — см. TODO.md ("права сотрудников с ограниченной ролью" уже отдельно
+// зафиксировано как backlog).
+export async function getRecentPriceRollbacks(): Promise<RecentBulkPriceUpdate[]> {
+  const supabase = await createClient();
+  const cutoff = new Date(Date.now() - ROLLBACK_WINDOW_HOURS * 3600 * 1000).toISOString();
+  const { data: entries } = await supabase
+    .from("audit_log")
+    .select("id, created_at")
+    .eq("action", "bulk_price_update")
+    .gte("created_at", cutoff)
+    .order("created_at", { ascending: false });
+  if (!entries || entries.length === 0) return [];
+
+  const { data: logRows } = await supabase
+    .from("price_change_log")
+    .select("audit_log_id")
+    .in("audit_log_id", entries.map((e) => e.id));
+  const countByAuditLog = new Map<string, number>();
+  for (const row of logRows ?? []) {
+    if (!row.audit_log_id) continue;
+    countByAuditLog.set(row.audit_log_id, (countByAuditLog.get(row.audit_log_id) ?? 0) + 1);
+  }
+
+  return entries
+    .filter((e) => (countByAuditLog.get(e.id) ?? 0) > 0)
+    .map((e) => ({
+      auditLogId: e.id,
+      createdAt: e.created_at,
+      affected: countByAuditLog.get(e.id) ?? 0,
+    }));
+}
+
+export interface RollbackResult {
+  error?: string;
+  reverted?: number;
+}
+
+export async function rollbackBulkPriceUpdate(auditLogId: string, locale: string): Promise<RollbackResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Не авторизован" };
+  const { data: profile } = await supabase.from("users").select("id").eq("id", user.id).single();
+  if (!profile) return { error: "Профиль не найден" };
+
+  const { data: auditRow } = await supabase
+    .from("audit_log")
+    .select("id, created_at")
+    .eq("id", auditLogId)
+    .eq("action", "bulk_price_update")
+    .maybeSingle();
+  if (!auditRow) return { error: "Запись не найдена" };
+
+  const ageHours = (Date.now() - new Date(auditRow.created_at).getTime()) / 3_600_000;
+  if (ageHours > ROLLBACK_WINDOW_HOURS) return { error: "Окно отката истекло (24 часа)" };
+
+  const { data: changeRows } = await supabase
+    .from("price_change_log")
+    .select("plant_id, previous_price, previous_min_qty, previous_currency")
+    .eq("audit_log_id", auditLogId);
+  if (!changeRows || changeRows.length === 0) return { error: "Нет данных для отката" };
+
+  let reverted = 0;
+  for (const row of changeRows) {
+    const { data: priceRow } = await supabase
+      .from("prices")
+      .select("id")
+      .eq("plant_id", row.plant_id)
+      .eq("min_qty", row.previous_min_qty)
+      .maybeSingle();
+    if (!priceRow) continue;
+    const { error: updateError } = await supabase
+      .from("prices")
+      .update({ price: row.previous_price, currency: row.previous_currency })
+      .eq("id", priceRow.id);
+    if (!updateError) reverted += 1;
+  }
+
+  if (reverted === 0) return { error: "Не удалось откатить — товары могли быть удалены или изменены" };
+
+  await supabase.from("audit_log").insert({
+    actor_id: profile.id,
+    action: "bulk_price_update_rollback",
+    entity_type: "plant",
+    before: { rolledBackAuditLogId: auditLogId },
+    after: { reverted },
+  });
+
+  revalidatePath(`/${locale}/supplier/products`);
+  revalidatePath(`/${locale}/supplier/products/bulk`);
+  return { reverted };
 }
