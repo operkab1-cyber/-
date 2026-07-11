@@ -473,6 +473,10 @@ export interface Database {
         Args: { query_text: string };
         Returns: { plant_id: string; score: number }[];
       };
+      match_plant_embeddings: {
+        Args: { query_embedding: number[]; match_count?: number };
+        Returns: { plant_id: string; similarity: number }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

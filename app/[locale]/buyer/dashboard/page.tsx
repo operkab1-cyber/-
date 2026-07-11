@@ -35,6 +35,9 @@ export default async function BuyerDashboardPage({
         <Link href={`/${locale}/buyer/orders`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
           Заказы
         </Link>
+        <Link href={`/${locale}/buyer/calculators`} className="rounded-md border border-border bg-white px-4 py-2 font-body text-sm text-ink hover:bg-paper-deep">
+          Калькуляторы
+        </Link>
       </div>
       <p className="mt-4 font-body text-[14px] text-ink-muted">
         Рекомендации, избранные поставщики — backlog.

@@ -416,6 +416,21 @@ export async function searchPlants(query: string, locale: string = "ru"): Promis
     ids = (fuzzy ?? []).map((r: { plant_id: string }) => r.plant_id);
   }
 
+  // Embedding-канал (AI Architecture §4) — reciprocal rank fusion поверх того же
+  // набора результатов, когда доступен VOYAGE_API_KEY и таблица plant_embeddings
+  // заполнена (0009_embeddings.sql). Без ключа generateEmbedding() возвращает null
+  // и этот блок no-op — поиск остаётся на tsvector+pg_trgm (уже рабочий MVP).
+  const { generateEmbedding } = await import("@/lib/ai/embeddings");
+  const queryEmbedding = await generateEmbedding(trimmed);
+  if (queryEmbedding) {
+    const { data: semanticMatches } = await supabase.rpc("match_plant_embeddings", {
+      query_embedding: queryEmbedding,
+      match_count: 10,
+    });
+    const semanticIds = (semanticMatches ?? []).map((r) => r.plant_id);
+    ids = [...new Set([...ids, ...semanticIds])];
+  }
+
   return getPlantsByIds(ids, locale);
 }
 
