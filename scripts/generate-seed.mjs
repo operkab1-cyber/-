@@ -237,23 +237,43 @@ lines.push(...categoryTranslations);
 lines.push("");
 
 // ==== Атрибуты каталога ====
+// [решено самостоятельно] Admin Panel §3.1 требует, чтобы форма характеристик
+// менялась по категории ("для Туи — зона морозостойкости..., для Грунтов —
+// объём упаковки..."), а Plant Catalog §4 — чтобы набор доступных фильтров тоже
+// был по категории. Схема поддерживает это через attributes.category_id
+// (null = атрибут глобальный, иначе — привязан к одной конкретной категории;
+// code уникален, поэтому "один атрибут = несколько категорий" схема не
+// выражает — раздельные строки под одним code запрещены unique-констрейнтом).
+// Проверено на реальных 165 позициях (см. TODO.md): container_volume/height_range
+// уже встречаются во всех 4 верхних категориях — остаются глобальными, как и
+// hardiness_zone/light (зимостойкость и освещение значимы для любого растения
+// в каталоге). foliage_type (вечнозелёное/листопадное) осмысленнее всего для
+// хвойных — там встречается нетривиальный случай (лиственница — листопадный
+// хвойный), поэтому привязан к top-level "khvoynye". crown_form (кустовая/
+// штамбовая) в реальных данных чаще всего варьируется у кустарников (8 из 56
+// "штамб" — больше, чем в остальных категориях), привязан к "kustarniki".
+// Это не значит, что у хвойных/деревьев не бывает штамбовой формы — такие
+// случаи в данных есть и по-прежнему хранятся и показываются на карточке
+// товара, просто форма добавления нового товара в этих категориях не
+// предлагает поле по умолчанию (см. lib/queries/catalog.ts, AddPlantWizard.tsx).
 lines.push("-- Определения атрибутов");
 const attributeDefs = [
-  { code: "hardiness_zone", type: "enum", unit: null, options: ["zone_3","zone_4","zone_5","zone_6","zone_7","zone_8","zone_9"] },
-  { code: "light", type: "enum", unit: null, options: ["sun","partial_shade","shade"] },
-  { code: "height_range", type: "text", unit: "см", options: null },
-  { code: "foliage_type", type: "enum", unit: null, options: ["evergreen","deciduous","variegated"] },
-  { code: "container_volume", type: "text", unit: "л", options: null },
-  { code: "crown_form", type: "enum", unit: null, options: ["bush","standard"] },
+  { code: "hardiness_zone", type: "enum", unit: null, options: ["zone_3","zone_4","zone_5","zone_6","zone_7","zone_8","zone_9"], categoryKey: null },
+  { code: "light", type: "enum", unit: null, options: ["sun","partial_shade","shade"], categoryKey: null },
+  { code: "height_range", type: "text", unit: "см", options: null, categoryKey: null },
+  { code: "foliage_type", type: "enum", unit: null, options: ["evergreen","deciduous","variegated"], categoryKey: "conifer" },
+  { code: "container_volume", type: "text", unit: "л", options: null, categoryKey: null },
+  { code: "crown_form", type: "enum", unit: null, options: ["bush","standard"], categoryKey: "shrub" },
 ];
 const attributeIds = {};
 for (const attr of attributeDefs) {
   const id = randomUUID();
   attributeIds[attr.code] = id;
   const optionsJson = attr.options ? `'${JSON.stringify(attr.options)}'::jsonb` : "null";
+  const attrCategoryId = attr.categoryKey ? categoryIds[attr.categoryKey] : null;
   lines.push(
     `insert into attributes (id, category_id, code, data_type, unit, enum_options, is_filterable) values (` +
-      `${sqlString(id)}, null, ${sqlString(attr.code)}, ${sqlString(attr.type)}, ${sqlString(attr.unit)}, ${optionsJson}, true);`
+      `${sqlString(id)}, ${sqlString(attrCategoryId)}, ${sqlString(attr.code)}, ${sqlString(attr.type)}, ${sqlString(attr.unit)}, ${optionsJson}, true);`
   );
 }
 lines.push("");

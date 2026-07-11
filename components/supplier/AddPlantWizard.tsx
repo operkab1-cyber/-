@@ -9,7 +9,8 @@ import { TextField } from "@/components/ui/TextField";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { Stepper } from "@/components/auth/Stepper";
-import type { CatalogCategory } from "@/lib/queries/catalog";
+import type { CatalogCategory, FilterAttribute } from "@/lib/queries/catalog";
+import { isAttributeRelevant } from "@/lib/attributeLabels";
 
 const STEP_FIELDS: Record<number, (keyof PlantFormInput)[]> = {
   1: ["name", "categoryId", "latinName"],
@@ -19,7 +20,15 @@ const STEP_FIELDS: Record<number, (keyof PlantFormInput)[]> = {
 // Admin Panel §3.1 — степпер 4 шага: Основное → Фото → Характеристики → Цена и остаток.
 // Шаг "Фото" — Phase 5 ограничен: загрузка не в этой форме (см. отчёт Phase 5),
 // сразу после публикации фото можно добавить отдельно (backlog).
-export function AddPlantWizard({ locale, categories }: { locale: string; categories: CatalogCategory[] }) {
+export function AddPlantWizard({
+  locale,
+  categories,
+  attributes,
+}: {
+  locale: string;
+  categories: CatalogCategory[];
+  attributes: FilterAttribute[];
+}) {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -28,11 +37,22 @@ export function AddPlantWizard({ locale, categories }: { locale: string; categor
     register,
     trigger,
     getValues,
+    watch,
     formState: { errors },
   } = useForm<PlantFormInput>({
     resolver: zodResolver(plantFormSchema),
     defaultValues: { minQty: 1, stockQty: 0 },
   });
+
+  // Admin Panel §3.1 — форма характеристик меняется по выбранной категории
+  // (см. lib/attributeLabels.ts:isAttributeRelevant, lib/queries/catalog.ts).
+  const selectedCategoryId = watch("categoryId");
+  const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
+  const ancestorIds = selectedCategory ? [selectedCategory.id, selectedCategory.parentId] : [];
+  const isCodeRelevant = (code: string) => {
+    const attr = attributes.find((a) => a.code === code);
+    return attr ? isAttributeRelevant(attr, ancestorIds) : true;
+  };
 
   async function goNext(fields: (keyof PlantFormInput)[]) {
     const valid = await trigger(fields);
@@ -106,27 +126,51 @@ export function AddPlantWizard({ locale, categories }: { locale: string; categor
       {step === 3 && (
         <div className="flex flex-col gap-4">
           <h2 className="font-display text-lg font-semibold text-canopy">Характеристики</h2>
-          <Select label="Зона морозостойкости" {...register("hardinessZone")} defaultValue="">
-            <option value="">Не указано</option>
-            {["zone_3", "zone_4", "zone_5", "zone_6", "zone_7", "zone_8", "zone_9"].map((z) => (
-              <option key={z} value={z}>
-                {z.replace("zone_", "Зона ")}
-              </option>
-            ))}
-          </Select>
-          <Select label="Освещение" {...register("light")} defaultValue="">
-            <option value="">Не указано</option>
-            <option value="sun">Солнце</option>
-            <option value="partial_shade">Полутень</option>
-            <option value="shade">Тень</option>
-          </Select>
-          <TextField label="Высота (например, 60-120 см)" {...register("heightRange")} />
-          <TextField label="Объём контейнера (например, 5 л)" {...register("containerVolume")} />
-          <Select label="Форма кроны" {...register("crownForm")} defaultValue="">
-            <option value="">Не указано</option>
-            <option value="bush">Кустовая</option>
-            <option value="standard">Штамбовая</option>
-          </Select>
+          {!selectedCategoryId && (
+            <p className="font-body text-[12.5px] text-ink-muted">
+              Показан полный набор полей — выберите категорию на шаге «Основное», чтобы увидеть
+              только те, что относятся к ней.
+            </p>
+          )}
+          {isCodeRelevant("hardiness_zone") && (
+            <Select label="Зона морозостойкости" {...register("hardinessZone")} defaultValue="">
+              <option value="">Не указано</option>
+              {["zone_3", "zone_4", "zone_5", "zone_6", "zone_7", "zone_8", "zone_9"].map((z) => (
+                <option key={z} value={z}>
+                  {z.replace("zone_", "Зона ")}
+                </option>
+              ))}
+            </Select>
+          )}
+          {isCodeRelevant("light") && (
+            <Select label="Освещение" {...register("light")} defaultValue="">
+              <option value="">Не указано</option>
+              <option value="sun">Солнце</option>
+              <option value="partial_shade">Полутень</option>
+              <option value="shade">Тень</option>
+            </Select>
+          )}
+          {isCodeRelevant("height_range") && (
+            <TextField label="Высота (например, 60-120 см)" {...register("heightRange")} />
+          )}
+          {isCodeRelevant("container_volume") && (
+            <TextField label="Объём контейнера (например, 5 л)" {...register("containerVolume")} />
+          )}
+          {isCodeRelevant("foliage_type") && (
+            <Select label="Тип листвы" {...register("foliageType")} defaultValue="">
+              <option value="">Не указано</option>
+              <option value="evergreen">Вечнозелёное</option>
+              <option value="deciduous">Листопадное</option>
+              <option value="variegated">Пёстролистное</option>
+            </Select>
+          )}
+          {isCodeRelevant("crown_form") && (
+            <Select label="Форма кроны" {...register("crownForm")} defaultValue="">
+              <option value="">Не указано</option>
+              <option value="bush">Кустовая</option>
+              <option value="standard">Штамбовая</option>
+            </Select>
+          )}
           <div className="flex justify-between">
             <Button type="button" variant="ghost" onClick={() => setStep(2)}>
               Назад

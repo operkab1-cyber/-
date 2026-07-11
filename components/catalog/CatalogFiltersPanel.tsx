@@ -3,14 +3,19 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useTransition } from "react";
 
-// Plant Catalog §4 / UX Bible §7.2 — фильтры слева (desktop). Полный набор
-// динамических фильтров по attributes.is_filterable — backlog (сейчас реализован
-// сквозной набор: наличие, форма кроны, цена — Plant Catalog §4.2 "обязательные
-// сквозные фильтры", плюс один демонстрационный EAV-фильтр crown_form).
+// Plant Catalog §4 / UX Bible §7.2 — фильтры слева (desktop). Сквозные фильтры
+// (наличие, цена — Plant Catalog §4.2 "обязательные сквозные фильтры") показаны
+// всегда; EAV-фильтр crown_form — только если он релевантен текущей категории
+// (см. app/[locale]/(public)/catalog/[categorySlug]/page.tsx,
+// lib/queries/catalog.ts:isAttributeRelevant). Полный набор произвольных
+// динамических фильтров по attributes.is_filterable для любых будущих
+// атрибутов — backlog, сейчас обобщён только этот один EAV-фильтр.
 export function CatalogFiltersPanel({
   current,
+  showCrownForm = true,
 }: {
   current: { instock?: string; crown_form?: string; min_price?: string; max_price?: string };
+  showCrownForm?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -38,18 +43,20 @@ export function CatalogFiltersPanel({
         Только в наличии
       </label>
 
-      <div className="mt-4">
-        <p className="mb-1.5 font-body text-[13px] font-semibold text-ink">Форма кроны</p>
-        <select
-          value={current.crown_form ?? ""}
-          onChange={(e) => updateParam("crown_form", e.target.value || null)}
-          className="w-full rounded-sm border border-border px-2 py-1.5 font-body text-[13px]"
-        >
-          <option value="">Любая</option>
-          <option value="bush">Кустовая</option>
-          <option value="standard">Штамбовая</option>
-        </select>
-      </div>
+      {showCrownForm && (
+        <div className="mt-4">
+          <p className="mb-1.5 font-body text-[13px] font-semibold text-ink">Форма кроны</p>
+          <select
+            value={current.crown_form ?? ""}
+            onChange={(e) => updateParam("crown_form", e.target.value || null)}
+            className="w-full rounded-sm border border-border px-2 py-1.5 font-body text-[13px]"
+          >
+            <option value="">Любая</option>
+            <option value="bush">Кустовая</option>
+            <option value="standard">Штамбовая</option>
+          </select>
+        </div>
+      )}
 
       <div className="mt-4">
         <p className="mb-1.5 font-body text-[13px] font-semibold text-ink">Цена, KGS</p>

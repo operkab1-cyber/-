@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getPlantsByCategory, resolveCategoryBySlug, type CatalogFilters } from "@/lib/queries/catalog";
+import { getPlantsByCategory, resolveCategoryBySlug, getFilterableAttributes, isAttributeRelevant, type CatalogFilters } from "@/lib/queries/catalog";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { CatalogFiltersPanel } from "@/components/catalog/CatalogFiltersPanel";
 import type { Metadata } from "next";
@@ -47,6 +47,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   const plants = await getPlantsByCategory(categorySlug, locale, filters);
 
+  // Admin Panel §3.1 / Plant Catalog §4 — набор фильтров зависит от категории
+  // (сейчас единственный EAV-фильтр — crown_form, привязан к "kustarniki").
+  const attributes = await getFilterableAttributes();
+  const ancestorIds = category.breadcrumbs.map((b) => b.id);
+  const crownFormAttr = attributes.find((a) => a.code === "crown_form");
+  const showCrownFormFilter = crownFormAttr ? isAttributeRelevant(crownFormAttr, ancestorIds) : false;
+
   const breadcrumbItems = [
     { name: "Каталог", url: `/${locale}/catalog` },
     ...category.breadcrumbs.map((b) => ({ name: b.name, url: `/${locale}/catalog/${b.slug}` })),
@@ -85,7 +92,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
-        <CatalogFiltersPanel current={sp} />
+        <CatalogFiltersPanel current={sp} showCrownForm={showCrownFormFilter} />
 
         <div>
           {plants.length === 0 ? (

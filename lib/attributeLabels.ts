@@ -22,3 +22,12 @@ export const ENUM_VALUE_LABELS: Record<string, string> = {
 export function formatAttributeValue(code: string, value: string): string {
   return ENUM_VALUE_LABELS[value] ?? value;
 }
+
+// Admin Panel §3.1 / Plant Catalog §4 — атрибут релевантен категории, если он
+// глобальный (categoryId === null), привязан к самой категории, или к одному
+// из её предков (ancestorIds передаётся вызывающей стороной — включает саму
+// категорию). Без импортов сервера, чтобы использоваться и в клиентских
+// компонентах (AddPlantWizard), и на сервере (страницы каталога).
+export function isAttributeRelevant(attr: { categoryId: string | null }, ancestorIds: (string | null | undefined)[]): boolean {
+  return attr.categoryId === null || ancestorIds.includes(attr.categoryId);
+}

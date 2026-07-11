@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { getPlantBySlug, getCompatiblePlants } from "@/lib/queries/catalog";
+import { getPlantBySlug, getCompatiblePlants, getFilterableAttributes, isAttributeRelevant } from "@/lib/queries/catalog";
 import { Badge } from "@/components/ui/Badge";
 import { RequestForm } from "@/components/catalog/RequestForm";
 import { CompareToggle } from "@/components/catalog/CompareToggle";
@@ -49,6 +49,18 @@ export default async function ProductPage({ params }: Props) {
 
   const ALL_ATTRIBUTE_CODES = ["hardiness_zone", "light", "height_range", "foliage_type", "container_volume", "crown_form"];
   const valueByCode = new Map(plant.attributes.map((a) => [a.code, a]));
+
+  // Admin Panel §3.1 / Plant Catalog §4 — какие характеристики показывать в
+  // таблице зависит от категории товара, но уже сохранённое значение всегда
+  // показываем (даже если для этой категории поле не является атрибутом "по
+  // умолчанию" — реальные данные не прячем, см. TODO.md).
+  const allAttrs = await getFilterableAttributes();
+  const ancestorIds = plant.category ? [plant.category.id, plant.category.parentId] : [];
+  const visibleAttributeCodes = ALL_ATTRIBUTE_CODES.filter((code) => {
+    if (valueByCode.has(code)) return true;
+    const attr = allAttrs.find((a) => a.code === code);
+    return attr ? isAttributeRelevant(attr, ancestorIds) : true;
+  });
 
   const productPath = `/${locale}/catalog/${categorySlug}/${plant.slug}`;
   const breadcrumbItems = [
@@ -181,7 +193,7 @@ export default async function ProductPage({ params }: Props) {
           <summary className="cursor-pointer font-display text-lg font-semibold text-canopy">Характеристики</summary>
           <table className="mt-3 w-full font-body text-[13.5px]">
             <tbody>
-              {ALL_ATTRIBUTE_CODES.map((code) => {
+              {visibleAttributeCodes.map((code) => {
                 const attr = valueByCode.get(code);
                 return (
                   <tr key={code} className="border-b border-dashed border-border last:border-none">

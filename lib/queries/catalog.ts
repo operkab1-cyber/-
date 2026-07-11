@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+export { isAttributeRelevant } from "@/lib/attributeLabels";
 
 // [решено самостоятельно] translations — полиморфная таблица БЕЗ foreign key на plants
 // (Database Design §1, принцип 4). PostgREST embedding (`translations!inner(...)`)
@@ -113,13 +114,14 @@ export interface FilterAttribute {
   dataType: string;
   unit: string | null;
   enumOptions: string[] | null;
+  categoryId: string | null; // null = глобальный атрибут, иначе — привязан к одной категории
 }
 
 export async function getFilterableAttributes(): Promise<FilterAttribute[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("attributes")
-    .select("id, code, data_type, unit, enum_options")
+    .select("id, code, data_type, unit, enum_options, category_id")
     .eq("is_filterable", true);
   return (data ?? []).map((a) => ({
     id: a.id,
@@ -127,6 +129,7 @@ export async function getFilterableAttributes(): Promise<FilterAttribute[]> {
     dataType: a.data_type,
     unit: a.unit,
     enumOptions: (a.enum_options as string[] | null) ?? null,
+    categoryId: a.category_id,
   }));
 }
 
@@ -247,7 +250,7 @@ export interface PlantDetail {
   stockUpdatedAt: string | null;
   minOrderQty: number;
   attributes: { code: string; unit: string | null; value: string }[];
-  category: { slug: string; name: string; parentSlug: string | null } | null;
+  category: { id: string; slug: string; name: string; parentId: string | null; parentSlug: string | null } | null;
   company: { id: string; name: string; slug: string; country: string; ratingAvg: number } | null;
 }
 
@@ -298,8 +301,10 @@ export async function getPlantBySlug(slug: string, locale: string = "ru"): Promi
       parentSlug = parent?.slug ?? null;
     }
     category = {
+      id: categoryRow.data.id,
       slug: categoryRow.data.slug,
       name: catNameMap.get(categoryRow.data.id) ?? categoryRow.data.slug,
+      parentId: categoryRow.data.parent_id,
       parentSlug,
     };
   }
