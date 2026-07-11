@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { RequestForm } from "@/components/catalog/RequestForm";
 import { CompareToggle } from "@/components/catalog/CompareToggle";
 import { AddToCartForm } from "@/components/catalog/AddToCartForm";
+import { LivePriceTiers } from "@/components/catalog/LivePriceTiers";
 import { ATTRIBUTE_LABELS, formatAttributeValue } from "@/lib/attributeLabels";
 import Link from "next/link";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -128,18 +129,7 @@ export default async function ProductPage({ params }: Props) {
 
           <div className="mt-5 rounded-lg border border-border bg-white p-4">
             <p className="mb-2 font-body text-[13px] font-semibold text-ink">Цена по объёму</p>
-            <table className="w-full font-mono text-[13px]">
-              <tbody>
-                {plant.priceTiers.map((tier) => (
-                  <tr key={tier.minQty} className="border-b border-dashed border-border last:border-none">
-                    <td className="py-1.5 text-ink-muted">от {tier.minQty} шт</td>
-                    <td className="py-1.5 text-right text-ink">
-                      {tier.price.toLocaleString("ru-RU")} {tier.currency}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <LivePriceTiers plantId={plant.id} initialTiers={plant.priceTiers} />
             <div className="mt-3 flex items-center justify-between">
               <Badge tone={inStock ? "sprout" : "error"}>{inStock ? `В наличии: ${plant.totalStock}` : "Нет в наличии"}</Badge>
               {plant.stockUpdatedAt && (
