@@ -52,7 +52,11 @@ export async function middleware(request: NextRequest) {
   const locale = segments[0] ?? "en";
   const pathAfterLocale = "/" + segments.slice(1).join("/");
 
-  const matchedRule = ROLE_PREFIXES.find((r) => pathAfterLocale.startsWith(r.prefix));
+  // Точное совпадение сегмента, а не просто startsWith — иначе /suppliers/[slug]
+  // (публичная страница профиля поставщика, Phase 7) ложно матчится префиксом
+  // "/supplier" (кабинет поставщика) и анонимных посетителей редиректит на /login.
+  // [найдено живым тестированием в Phase 9]
+  const matchedRule = ROLE_PREFIXES.find((r) => pathAfterLocale === r.prefix || pathAfterLocale.startsWith(r.prefix + "/"));
   const requiresAuth = matchedRule || pathAfterLocale.startsWith("/onboarding");
 
   if (requiresAuth && !user) {
