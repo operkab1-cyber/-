@@ -65,9 +65,7 @@ export default async function HomePage({
             <Link href={`/${locale}/catalog`}>Каталог</Link>
             <Link href={`/${locale}/calculator`}>Калькулятор</Link>
             <Link href={`/${locale}/login`}>Войти</Link>
-            <Link href={`/${locale}/register`} className="rounded-md bg-sap px-4 py-2 font-semibold text-white hover:bg-sap-hover">
-              Регистрация
-            </Link>
+            <Link href={`/${locale}/register`}>Регистрация</Link>
           </nav>
         </div>
       </header>
@@ -83,16 +81,16 @@ export default async function HomePage({
           </p>
           <div className="mx-auto mt-6 flex max-w-md gap-3">
             <Link
-              href={`/${locale}/register`}
+              href={`/${locale}/catalog`}
               className="flex-1 rounded-md bg-sap px-5 py-3 font-body text-sm font-semibold text-white hover:bg-sap-hover"
             >
-              Я поставщик
+              Смотреть каталог
             </Link>
             <Link
-              href={`/${locale}/register`}
+              href={`/${locale}/calculator`}
               className="flex-1 rounded-md border border-white/40 px-5 py-3 font-body text-sm font-semibold text-white hover:bg-white/10"
             >
-              Я покупатель
+              Калькулятор озеленения
             </Link>
           </div>
           <div className="mx-auto mt-6 max-w-md">
@@ -117,17 +115,6 @@ export default async function HomePage({
           </div>
         </section>
 
-        <section className="bg-paper-deep px-5 py-10">
-          <div className="mx-auto max-w-[1280px]">
-            <h2 className="mb-6 text-center font-display text-2xl font-semibold text-canopy">Как это работает</h2>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-              <Step n={1} title="Регистрация" text="Заполните профиль компании и загрузите документы на проверку." />
-              <Step n={2} title="Верификация" text="Обычно занимает 24–48 часов." />
-              <Step n={3} title="Первая сделка" text="Публикуйте каталог или оформляйте заказ у проверенных поставщиков." />
-            </div>
-          </div>
-        </section>
-
         {previewPlants.length > 0 && (
           <section className="mx-auto max-w-[1280px] px-5 py-10">
             <h2 className="mb-6 font-display text-2xl font-semibold text-canopy">Из каталога</h2>
@@ -144,15 +131,5 @@ export default async function HomePage({
         Tamga Green — цифровая инфраструктура для европейской индустрии садовых центров.
       </footer>
     </>
-  );
-}
-
-function Step({ n, title, text }: { n: number; title: string; text: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-white p-5">
-      <span className="font-mono text-[12px] text-stamp">Шаг {n}</span>
-      <h3 className="mt-1 font-display text-lg font-semibold text-canopy">{title}</h3>
-      <p className="mt-1 font-body text-[13.5px] text-ink-muted">{text}</p>
-    </div>
   );
 }
