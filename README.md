@@ -1,46 +1,54 @@
-# Tamga Green — каркас проекта
+# Tamga Green
 
-Собрано по 9 документам + 2 активам (Phase 0-1 из `Tamga_Green_Build_Prompt.md`,
-см. `docs/spec/`). Статус по фазам — `TODO.md`.
+B2B-маркетплейс для питомников, садовых центров и ландшафтных компаний.
+Собрано по 9 документам + 2 активам (`Tamga_Green_Build_Prompt.md`, см.
+`docs/spec/`). Полная история по фазам и весь backlog — `TODO.md`.
 
-## Что сделано в Phase 1
+## Стек
 
-- Next.js App Router + TypeScript + Tailwind (токены из `Tamga_Green_Design_Tokens.md`
-  перенесены в `tailwind.config.ts` 1:1) + next-intl (`en`/`ru`).
-- 4 миграции в `supabase/migrations/`:
-  - `0001_init_catalog.sql` — каталог (categories/plants/plant_images/attributes/
-    plant_attribute_values/availability/prices/translations) + полнотекстовый поиск.
-  - `0002_transactional.sql` — companies/users/orders/carts/сообщения/AI-чат/
-    requests/settings + все владельческие RLS-политики каталога.
-  - `0003_content.sql` — landscape_solutions/projects/blog/faq/plant_compatibility.
-  - `0004_audit.sql` — audit_log/price_change_log (Admin Panel §9).
-- `supabase/seed.sql` — сгенерирован скриптом `scripts/generate-seed.mjs` из
-  `supabase/seed-data/plants-catalog.json` (реальный прайс питомника «Дебский»,
-  165 позиций, компания-поставщик заведена как первая верифицированная).
-- **Все 40 таблиц** имеют `enable row level security` + хотя бы одну политику —
-  проверено программно (см. TODO.md, Phase 1 отчёт).
+Next.js (App Router) + TypeScript + Tailwind + next-intl (`en`/`ru`) +
+Supabase (Postgres + Auth + Storage + Realtime).
 
-## Важно: чем эта сессия проверяла миграции
+## Продакшн-деплой (Supabase + Vercel)
 
-В этой облачной среде нет Docker-демона (`docker ps` не может достучаться до
-`/var/run/docker.sock`), поэтому `supabase start` здесь не запускался и не мог быть
-запущен. Вместо этого миграции были провалидированы против нативного Postgres 16
-(установлен в системе) со stub-схемой `auth.users` — это подтверждает, что весь SQL
-синтаксически и логически корректен (включая RLS-изоляцию между двумя тестовыми
-поставщиками — см. TODO.md), но **не проверяет** реальные Supabase-специфичные вещи
-(Auth JWT claims, Storage, Realtime, Edge Functions) — это должно быть проверено на
-вашей машине с Docker при первом `supabase start`.
+Занимает ~20-30 минут, без программирования — оба сервиса бесплатны на старте.
 
-`npm install`, `npm run build`, `npm run typecheck`, `npm run lint` — всё
-запускалось по-настоящему в этой сессии и проходит чисто (см. ниже).
+### 1. Supabase (база данных)
 
-## Что нужно установить (у вас)
+1. Зарегистрируйтесь на [supabase.com](https://supabase.com) (можно через GitHub).
+2. **New Project** — задайте название, пароль базы данных (сохраните отдельно)
+   и регион.
+3. В **Project Settings → API** скопируйте `Project URL` и `anon public` key —
+   понадобятся на шаге 2.
+4. В **SQL Editor** выполните по очереди все файлы из `supabase/migrations/`
+   строго по номеру (`0001_init_catalog.sql` → `0010_realtime_prices.sql`).
+5. Там же выполните `supabase/seed.sql` — это загрузит демо-каталог: 165
+   реальных позиций питомника «Дебский» (Кыргызстан, цены в KGS).
+6. В **Authentication → Hooks** убедитесь, что `custom_access_token_hook`
+   включён (объявлен в `supabase/config.toml`, но на хостинге иногда нужно
+   подтвердить вручную) — без него JWT не будет нести `role`/`company_id`,
+   и RLS-политики, зависящие от них, не будут срабатывать как надо.
 
-1. [Node.js](https://nodejs.org) 20+
-2. [Supabase CLI](https://supabase.com/docs/guides/cli) — `npm install -g supabase`
-3. Docker (нужен Supabase CLI для локального Postgres/Auth/Storage/Realtime)
+### 2. Vercel (сайт)
 
-## Запуск
+1. Зарегистрируйтесь на [vercel.com](https://vercel.com) через тот же GitHub.
+2. **Add New Project** → выберите репозиторий — Vercel сам распознает Next.js.
+3. В **Environment Variables** добавьте значения из шага 1.3:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. **Deploy**. Через пару минут сайт будет доступен по ссылке вида
+   `<project>.vercel.app`. Дальнейшие пуши в подключённую ветку деплоятся
+   автоматически.
+
+Опционально (иначе соответствующие AI-функции корректно деградируют без них,
+см. `TODO.md`):
+- `VOYAGE_API_KEY` — эмбеддинги для AI-поиска.
+- `ANTHROPIC_API_KEY` — реальная генерация AI-описаний вместо шаблона.
+
+## Локальная разработка
+
+Нужны: [Node.js](https://nodejs.org) 20+, [Supabase CLI](https://supabase.com/docs/guides/cli)
+(`npm install -g supabase`), Docker (нужен CLI для локального Postgres/Auth/Storage/Realtime).
 
 ```bash
 npm install
@@ -58,8 +66,7 @@ supabase db reset
 npm run dev
 ```
 
-Откройте `http://localhost:3000/ru/catalog/khvoynye` — категория «Хвойные»
-(77 позиций: можжевельники, туи, ели, сосны, тис, лиственница).
+Откройте `http://localhost:3000/ru/catalog/khvoynye` — категория «Хвойные».
 
 Если меняете `supabase/seed-data/plants-catalog.json` — перегенерируйте seed:
 
@@ -70,16 +77,31 @@ npm run generate-seed
 ## Проверка
 
 ```bash
-npm run build       # ✓ проходит без ошибок (проверено в этой сессии)
-npm run typecheck    # ✓ чисто
-npm run lint         # ✓ чисто
+npm run build
+npm run typecheck
+npm run lint
 ```
+
+Все три команды регулярно прогонялись в ходе сборки и проходят чисто — см.
+отчёты по фазам в `TODO.md`.
+
+## Важно: как эта сборка проверялась без Docker
+
+Среда, в которой собирался проект, не имеет Docker-демона, поэтому
+`supabase start` в ней запустить было нельзя. Миграции вместо этого
+проверялись против нативного Postgres 16 со stub-схемой `auth`/`storage` —
+это подтверждает корректность SQL и RLS-изоляции (включая живые тесты между
+несколькими смоделированными аккаунтами, см. `TODO.md`), но не проверяет
+Supabase-специфичные вещи (реальные Auth JWT из живого проекта, Storage,
+Realtime WebSocket-обмен между вкладками, Edge Functions) — это стоит вручную
+пройти на вашем задеплоенном проекте после первого запуска.
 
 ## Структура
 
-См. `docs/spec/Tamga_Green_System_Architecture.md`, раздел 2 — реализован пока не
-весь каталог, а слайс: каталог по категориям + переводы + цены + остатки + вся
-транзакционная/контентная схема БД. Остальное — по `TODO.md`.
+См. `docs/spec/Tamga_Green_System_Architecture.md`, раздел 2. Полная история
+по фазам (что сделано, что отклонилось от документов и почему, весь backlog)
+— `TODO.md`.
 
-Оригинальные 9 документов + 2 актива, из которых собран проект, лежат в `docs/spec/`
-и `supabase/seed-data/` / `reference/` — источник истины для всех решений в коде.
+Оригинальные 9 документов + 2 актива, из которых собран проект, лежат в
+`docs/spec/` и `supabase/seed-data/` / `reference/` — источник истины для
+всех решений в коде.
